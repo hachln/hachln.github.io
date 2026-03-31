@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/.portfolio | Melvin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/ppit-website</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">cat readme.md</div>
+            </div>
+            <div class="window-content project-header-content">
+                <h1>PPIT-SZ Website</h1>
+                <p class="subtitle">A modern, responsive website for the PPIT organization.</p>
+                <div class="project-links">
+                    <a href="https://github.com/hachln/ppitwebsite20242025" target="_blank" class="btn-primary"><i class="fab fa-github"></i> View Source Code</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">feh --scale-down images/*</div>
+            </div>
+            <div class="window-content carousel-wrapper">
+                <div class="carousel">
+                    <button class="carousel-btn prev-btn"><i class="fas fa-chevron-left"></i></button>
+                    
+                    <div class="carousel-track-container">
+                        <ul class="carousel-track">
+                            <li class="carousel-slide current-slide">
+                                <img src="./ppit-website/1.png" alt="Homepage Screenshot">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="./ppit-website/2.png" alt="Members Page Screenshot">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="./ppit-website/3.png" alt="Members Page Screenshot 2">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="./ppit-website/4.png" alt="Event Page Screenshot">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="./ppit-website/5.png" alt="FAQ Page Screenshot">
+                            </li>
+                        </ul>
+                    </div>
+
+                    <button class="carousel-btn next-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                
+                <div class="carousel-nav">
+                    
+                </div>
+            </div>
+        </section>
+
+        <div class="split-layout">
+            
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">details.txt</div>
+                </div>
+                <div class="window-content">
+                    <h2>> about_the_project</h2>
+                    <p>The PPIT Website is a modern, responsive website designed to showcase the organization's activities, events, members and FAQ. It features a clean design, size responsiveness, and intuitive navigation to provide an excellent user experience.</p>
+                    <br>
+                    <p><strong>Key Features:</strong></p>
+                    <ul class="interests-list">
+                        <li>Homepage with dynamic content.</li>
+                        <li>Members Page with detailed profiles.</li>
+                        <li>Events Page with description.</li>
+                        <li>FAQ Page with answers.</li>
+                    </ul>
+                    <br>
+                </div>
+            </section>
+
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">dependencies.toml</div>
+                </div>
+                <div class="window-content">
+                    <h2>> tech_stack</h2>
+                    <p>Languages and frameworks utilized in this build:</p>
+                    <div class="skills-container project-tech-stack">
+                        <span class="skill-tag">Typescript</span>
+                        <span class="skill-tag">JavaScript</span>
+                        <span class="skill-tag">Tailwind CSS</span>
+                        <span class="skill-tag">Next.js</span>
+                        <span class="skill-tag">Vercel</span>
+                    </div>
+
+                    <h2 style="margin-top: 2rem;">> statistics</h2>
+                    <ul class="interests-list meta-list">
+                        <li><strong>Status:</strong> Not in use (Newer version available)</li>
+                    
+                        <li><strong>Timeline:</strong> 3 Months</li>
+                        <li><strong>Role:</strong> Developer working with team</li>
+                    </ul>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>EOF. Built with <i class="fas fa-heart" style="color: var(--fg-bright);"></i> and plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

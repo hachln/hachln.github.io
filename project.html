@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/projects/hypershell | dev.tty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/projects</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">cat readme.md</div>
+            </div>
+            <div class="window-content project-header-content">
+                <h1>HyperShell CLI</h1>
+                <p class="subtitle">A high-performance shell companion tool written in Rust.</p>
+                <div class="project-links">
+                    <a href="#" target="_blank" class="btn-primary"><i class="fab fa-github"></i> View Source Code</a>
+                    <a href="#" target="_blank" class="btn-secondary"><i class="fas fa-book"></i> Read Documentation</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">feh --scale-down images/*</div>
+            </div>
+            <div class="window-content carousel-wrapper">
+                <div class="carousel">
+                    <button class="carousel-btn prev-btn"><i class="fas fa-chevron-left"></i></button>
+                    
+                    <div class="carousel-track-container">
+                        <ul class="carousel-track">
+                            <li class="carousel-slide current-slide">
+                                <img src="https://via.placeholder.com/800x450/323c41/d3c6aa?text=Project+Screenshot+1" alt="Screenshot 1">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="https://via.placeholder.com/800x450/2d353b/a7c080?text=Project+Screenshot+2" alt="Screenshot 2">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="https://via.placeholder.com/800x450/3d484d/7fbbb3?text=Project+Screenshot+3" alt="Screenshot 3">
+                            </li>
+                        </ul>
+                    </div>
+
+                    <button class="carousel-btn next-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                
+                <div class="carousel-nav">
+                    
+                </div>
+            </div>
+        </section>
+
+        <div class="split-layout">
+            
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">details.txt</div>
+                </div>
+                <div class="window-content">
+                    <h2>> about_the_project</h2>
+                    <p>HyperShell was born out of a frustration with sluggish terminal startup times and bloated dotfile configurations. The goal was to create a lightweight, compiled alternative that handles complex parsing without blocking the main thread.</p>
+                    <br>
+                    <p><strong>Key Features:</strong></p>
+                    <ul class="interests-list">
+                        <li>Sub-millisecond prompt rendering.</li>
+                        <li>Asynchronous git status fetching.</li>
+                        <li>Built-in directory jumping (similar to zoxide).</li>
+                        <li>Configurable via a single, easily portable JSON file.</li>
+                    </ul>
+                    <br>
+                    <p>The architecture relies heavily on Rust's fearless concurrency model, utilizing crossbeam channels to manage background data fetching without interfering with the user's typing experience.</p>
+                </div>
+            </section>
+
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">dependencies.toml</div>
+                </div>
+                <div class="window-content">
+                    <h2>> tech_stack</h2>
+                    <p>Languages and frameworks utilized in this build:</p>
+                    <div class="skills-container project-tech-stack">
+                        <span class="skill-tag">Rust</span>
+                        <span class="skill-tag">Tokio (Async)</span>
+                        <span class="skill-tag">Serde</span>
+                        <span class="skill-tag">Clap (CLI)</span>
+                        <span class="skill-tag">GitHub Actions</span>
+                    </div>
+
+                    <h2 style="margin-top: 2rem;">> statistics</h2>
+                    <ul class="interests-list meta-list">
+                        <li><strong>Status:</strong> Active / Maintained</li>
+                        <li><strong>License:</strong> MIT</li>
+                        <li><strong>Timeline:</strong> 3 Months</li>
+                        <li><strong>Role:</strong> Sole Developer</li>
+                    </ul>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>exit. System uptime 1032 days. Built with plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
