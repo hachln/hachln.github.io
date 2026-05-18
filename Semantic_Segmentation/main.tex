@@ -201,5 +201,10 @@ Here is a summary table of the results:
     \label{fig:placeholder}
 \end{figure}
 
+From the results we can see that sometimes there's a trade-off between overall accuracy and minority-class recognition, which is a common challenge in semantic segmentation. While FC\_DenseNet67 achieved the highest overall accuracy at 80.31, a closer look at its class-specific breakdown reveals that this performance is heavily inflated by its strong classification of the background category (84.86 IoU), while severely failing on the scarcer $\le 1981$ building category with a critical IoU drop down to just 8.64. This discrepancy shows why we use mean Intersection-over-Union (mIoU) as a far more reliable benchmark than raw accuracy for imbalanced datasets. In contrast, models like Efficient\_UNet\_B0 and DeepLab\_v3\_Plus\_ResNet delivered the most robust and balanced performance across the entire dataset, having the highest mIoU values at 35.48 and 35.29, respectively. Showing great IoUs for the 3 building age categories.\\
+
+\noindent
+Additionally, we can see that traditional convolutional neural network (CNN) architectures incorporating multi-scale feature aggregation or advanced backbones outperformed modern lightweight vision transformers in this specific context. SegFormer\_B0 underperformed across all benchmarks, yielding the lowest mIoU (30.29) and overall accuracy (68.54), which suggests that transformer-based models may require substantially larger datasets or specialized hyperparameter tuning to accurately map detailed spatial representations compared to CNN models.
+
 \end{document}
 
