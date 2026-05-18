@@ -411,3 +411,60 @@ footer {
     .project-links { flex-direction: column; }
     .project-header-content h1 { font-size: 1.8rem; }
 }
+
+/* =========================================
+   BLOG / REPORT PAGE STYLES
+   ========================================= */
+
+.blog-section { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.blog-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0;
+}
+
+.figure-img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-main);
+    background: var(--bg-main);
+}
+
+.figure-caption {
+    font-size: 0.85rem;
+    color: var(--fg-faint);
+}
+
+.blog-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.2rem;
+}
+
+.blog-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.blog-table th,
+.blog-table td {
+    border: 1px solid var(--border-main);
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+}
+
+.blog-table th { color: var(--fg-bright); background: rgba(63, 72, 77, 0.6); }
+
+.model-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.2rem;
+}
+
+@media (max-width: 768px) {
+    .blog-grid { grid-template-columns: 1fr; }
+}

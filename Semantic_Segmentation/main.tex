@@ -1,0 +1,205 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amssymb}   % Required for the \blacksquare symbol
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage{float}
+\geometry{a4paper, margin=1in}
+\usepackage{booktabs}
+
+\title{Semantic Segmentation}
+
+
+\begin{document}
+
+\maketitle
+
+\section{What is Semantic segmentation?}
+In short, it is a technique in computer vision that assigns a value to each pixel. It is different from other techniques that count whole objects or instances for example. It can be used for automated driving, medical imaging, or even satellite imaging.
+\\
+
+\textbf{What are some examples of model architecture for this task?}
+
+\begin{itemize}[label=\raisebox{0.25ex}{\tiny$\blacksquare$}, itemsep=1em]
+    \item \textbf{U-net} \\
+    A model with the foundational encoder-decoder architecture characterized by its symmetric U shape, as the name suggests, and direct skip connections that connect the gap between low-level spatial details and high-level semantic context.
+    
+    \item \textbf{Efficient U-net} \\
+    An upgraded model to the standard U-Net that swaps the traditional encoder for a pre-trained EfficientNet, using compound scaling to achieve higher accuracy with significantly less computational overhead.
+    
+    \item \textbf{Deeplab V3+} \\
+    A scale-aware architecture that uses dilated convolutions and a spatial pyramid pooling module (ASPP) to see objects at different sizes while maintaining a dense feature map.
+    
+    \item \textbf{SegFormer} \\
+    A modern Transformer-based model that eliminates the need for positional encodings and uses a simple MLP decoder, offering a highly efficient, scalable, and robust alternative to traditional CNN-based segmentation.
+    
+    \item \textbf{HRNet} \\
+    A unique model architecture that maintains high-resolution representations in parallel branches throughout the entire network, constantly fusing multi-scale information to preserve better spatial precision.
+    
+    \item \textbf{FC-DenseNet} \\
+    An architecture that is comprised of dense connections that maximizes feature reuse and gradient flow by connecting every layer within a block to every other layer, resulting in a very parameter-efficient model for precise segmentation.
+\end{itemize}
+    
+\section{Experiment}
+Let’s try running a semantic segmentation task. We have a dataset of Satellite imagery from the city of Amsterdam. We split our data set into the training, validation, and test sets. The dataset contains a 512x512 image with 3 channels (RGB) in a TIFF file format for the image and also the year information attached to each pixel. We can run the experiment using google colab, that has cloud computing and GPU processing which is required extensively to train the models.
+
+\subsection{Relabeling}
+We the first relabel the data for the age component. Currently it is in the form of year (1994 for example), so we relabel into 4 categories for convenience. For values of $<$1981, we assign a value of 1, for values $>=$1981 and $<$2001, we assign a value of 2, then for values $>=2001$, assign a value of 3. For the background we simply assign a value of 0. Since the values have become so small we can use the QGIS software to view the images. 
+
+
+\begin{figure}[H]
+    \centering
+    
+    % --- Left Image ---
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        % Replace 'image1.png' with your file name
+        \includegraphics[width=\textwidth]{projreport-pics/8-image.png} 
+        \caption{Satellite Image Sample}
+        \label{fig:left_image}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        % Replace 'image2.jpg' with your file name
+        \includegraphics[width=\textwidth]{projreport-pics/8-imgneu.png} 
+        \caption{Age of building Sample}
+        \label{fig:right_image}
+    \end{minipage}
+    \vspace{10pt} % Adds a subtle vertical gap before the main caption
+    \caption{Dataset Sample}
+    \label{fig:side_by_side_layout}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/8-ageqgis.png}
+    \caption{Age Sample Opened in QGIS}
+    \label{fig:placeholder}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/8-processedage.png}
+    \caption{Relabeled Age Sample Opened in QGIS}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Importing and data loading}
+To start our training, we first create the setup and import part of the code. We code to prepare the environment, import frameworks, and initialize global hyperparameters. We first import fundamental PyTorch libraries for neural network design, optimization, and structural plumbing, alongside data tools like numpy, pandas, and scikit-image for managing geographic arrays and reading raw multi-band images. Since we put our dataset on Google Drive, we all the time need to allow access to the dataset, by mounting to Google Drive and establish target paths for tracking training metrics and saving checkpoints. Finally, we instantiate core constants that set the behavior of the network, such as locking the hardware execution path to a CUDA-enabled GPU, designating a small batch size of 4 to manage memory limits, and defining the target segmentation architecture to output four specific channels corresponding to the age categories.
+\\
+
+\noindent
+Then we have the dataloading part that translates these raw files into an optimized pipeline using PyTorch's structured ingestion components. It defines a custom AmsterdamDataset class that dynamically checks training, validation, and testing directories, employing file name set intersections to guarantee that every input image perfectly matches its corresponding ground-truth segmentation age mask. When an item is called, the dataset reads the .tiff files, applies an Albumentations transformation pipeline that normalizes the RGB values to ImageNet standards, and converts the data into PyTorch tensors via ToTensorV2(). These datasets are then wrapped inside standard PyTorch DataLoader instances, which automate structural batching, shuffle the training sequence to eliminate ordering bias, and consistently yield paired mini-batches directly to the model during training loops.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/importcode.png}
+    \caption{Code Excerpt of Import Cell}
+    \label{fig:placeholder}
+\end{figure}
+
+
+\subsection{Model Architecture and Training}
+To build our model, we construct the architecture cell by cloning the code from a public GitHub repository directly into our active Colab environment and append its directory to our system path so Python can successfully discover and import the custom function for each model architecture that we want to use. We then instantiate our segmentation model configuration, since some model have different versions or backbone used. Finally, we finish configuring this segment by defining the class\_weights penalty tensor to handle any pixel imbalances across background elements and historical structures, loading it directly into a standard cross-entropy loss function alongside an AdamW weight decay optimizer to handle gradient steps.
+\\
+
+\noindent
+For the training cell we run forty epochs of training and also have checkpoint management. The code automatically scan for an existing progress file to resume training smoothly, restoring model weights, optimizer states, and past performance trackers if a crash occurs or runtime error or gpu limit which occurs often when we use the free tier of colab. We also implemented the Automatic Mixed Precision (AMP) through a PyTorch GradScaler context to save video memory and accelerate math operations by downscaling precision dynamically inside the forward pass. Finally, we execute the standard mini-batch pipeline by running data forward through the architecture, evaluating errors against our weighted cross-entropy criterion, unscaling gradients to safely clip their maximum norms at 1.0 to prevent mathematical instability, and executing backpropagation via the optimizer before applying PyTorch garbage collection at each epoch's conclusion.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/train.png}
+    \caption{Code Excerpt of Training Cell}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Testing and Visualization}
+After training the model, we then evaluate our final performance. Using the test set, we log the final accuracy metrics. We first load the best saved checkpoint weights from our training phase, put the model into evaluation mode, and initialize a global confusion matrix as a numpy array. Since we only want to test final generalization, we run a loop exclusively over the test loader under a gradient-free context, taking the argmax of the model's outputs to extract the predicted class for each pixel and accumulating them into our matrix. Finally, we calculate the final class IoUs, mean Intersection-over-Union (mIoU), and overall accuracy from this matrix, package these scores into a pandas DataFrame, and append or save the results into a CSV file on our drive.
+\\
+
+\noindent
+Lastly, for visualization of our model's performance, we create a multi-panel analysis of a sample. We first load our best checkpoint weights, set the model to evaluation mode, and run a strict scanning loop over the validation loader to isolate a specific image patch that contains a specific threshold of all three age building categories. Once a qualifying patch is found, we pass it through a gradient-free forward pass, applying a bilinear interpolation step to automatically correct any resolution mismatches caused by different model architectures before extracting both the argmax predictions and soft probability scores. Finally, we use matplotlib to output a four-panel figure displaying the original satellite image, the ground truth mask with a custom color legend, the categorical model prediction map, and a continuous confidence heatmap.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/eval.png}
+    \caption{Code Excerpt of Evaluating Cell}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Results}
+Here is a summary table of the results:
+\begin{table}[ht]
+  \centering
+  \caption{Semantic segmentation metric comparisons across models.}
+  \label{tab:segmentation_results_2dp}
+  \resizebox{\textwidth}{!}{% % Forces the table to scale down to the text margin width
+    \begin{tabular}{lcccccc}
+      \toprule
+      \textbf{Model} & \textbf{mIoU} & \textbf{Overall Acc.} & \textbf{IoU (Background)} & \textbf{IoU ($<1981$)} & \textbf{IoU ($1981$--$2001$)} & \textbf{IoU ($\ge 2001$)} \\
+      \midrule
+      Milesial\_UNet            & 34.98 & 76.59 & 81.87 & 27.80 & 15.29 & 14.97 \\
+      Efficient\_UNet\_B0       & 35.48 & 76.58 & 81.25 & 25.39 & 14.52 & 20.74 \\
+      FC\_DenseNet67            & 32.32 & 80.31 & 84.86 & 8.64  & 17.54 & 18.24 \\
+      DeepLab\_v3\_Plus\_ResNet & 35.29 & 74.94 & 79.08 & 27.28 & 14.67 & 20.11 \\
+      SegFormer\_B0             & 30.29 & 68.54 & 72.13 & 19.03 & 13.27 & 16.73 \\
+      HRNet\_W48                & 34.50 & 75.84 & 81.23 & 23.06 & 15.49 & 18.20 \\
+      \bottomrule
+    \end{tabular}%
+  }
+\end{table}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/comparison.png}
+    \caption{Bar Chart Comparison of Performance}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsubsection{U-net}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/unet3.png}
+    \caption{Result of U-Net}
+    \label{fig:placeholder}
+\end{figure}
+\subsubsection{Efficient U-net}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/efficient_unet.png}
+    \caption{Result of Efficient U-Net}
+    \label{fig:placeholder}
+\end{figure}
+\subsubsection{FC-Densenet}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/fcdensenet2.png}
+    \caption{Result of FC-Densenet}
+    \label{fig:placeholder}
+\end{figure}
+\subsubsection{DeepLabV3}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/deeplab.png}
+    \caption{Result of DeepLabV3}
+    \label{fig:placeholder}
+\end{figure}
+\subsubsection{SegFormer}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/segformer.png}
+    \caption{Result of SegFormer}
+    \label{fig:placeholder}
+\end{figure}
+\subsubsection{HRNet}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/hrnet.png}
+    \caption{Result of HRNet}
+    \label{fig:placeholder}
+\end{figure}
+
+\end{document}
+

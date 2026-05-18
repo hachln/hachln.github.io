@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/projects/semantic-segmentation | dev.tty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/projects</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">cat readme.md</div>
+            </div>
+            <div class="window-content project-header-content">
+                <h1>Semantic Segmentation</h1>
+                <div class="project-links">
+                    <a href="https://github.com/hachln/semanticSegmentation_Amsterdam" target="_blank" class="btn-primary"><i class="fab fa-github"></i> Source</a>
+                </div>
+            </div>
+        </section>
+
+        <div class="split-layout">
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">overview.txt</div>
+                </div>
+                <div class="window-content">
+                    <h2>> What is Semantic segmentation?</h2>
+                    <p>In short, it is a technique in computer vision that assigns a value to each pixel. It is different from other techniques that count whole objects or instances for example. It can be used for automated driving, medical imaging, or even satellite imaging.</p>
+                </div>
+            </section>
+
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">models.txt</div>
+                </div>
+                <div class="window-content">
+                    <h2>> What are some examples of model architecture for this task?</h2>
+                    <ul class="interests-list">
+                        <li><strong>U-net</strong><br>A model with the foundational encoder-decoder architecture characterized by its symmetric U shape, as the name suggests, and direct skip connections that connect the gap between low-level spatial details and high-level semantic context.</li>
+                        <li><strong>Efficient U-net</strong><br>An upgraded model to the standard U-Net that swaps the traditional encoder for a pre-trained EfficientNet, using compound scaling to achieve higher accuracy with significantly less computational overhead.</li>
+                        <li><strong>Deeplab V3+</strong><br>A scale-aware architecture that uses dilated convolutions and a spatial pyramid pooling module (ASPP) to see objects at different sizes while maintaining a dense feature map.</li>
+                        <li><strong>SegFormer</strong><br>A modern Transformer-based model that eliminates the need for positional encodings and uses a simple MLP decoder, offering a highly efficient, scalable, and robust alternative to traditional CNN-based segmentation.</li>
+                        <li><strong>HRNet</strong><br>A unique model architecture that maintains high-resolution representations in parallel branches throughout the entire network, constantly fusing multi-scale information to preserve better spatial precision.</li>
+                        <li><strong>FC-DenseNet</strong><br>An architecture that is comprised of dense connections that maximizes feature reuse and gradient flow by connecting every layer within a block to every other layer, resulting in a very parameter-efficient model for precise segmentation.</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">experiment.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Experiment</h2>
+                <p>Let's try running a semantic segmentation task. We have a dataset of Satellite imagery from the city of Amsterdam. We split our data set into the training, validation, and test sets. The dataset contains a 512x512 image with 3 channels (RGB) in a TIFF file format for the image and also the year information attached to each pixel. We can run the experiment using google colab, that has cloud computing and GPU processing which is required extensively to train the models.</p>
+
+                <h3>> Relabeling</h3>
+                <p>We the first relabel the data for the age component. Currently it is in the form of year (1994 for example), so we relabel into 4 categories for convenience. For values of &lt;1981, we assign a value of 1, for values &gt;=1981 and &lt;2001, we assign a value of 2, then for values &gt;=2001, assign a value of 3. For the background we simply assign a value of 0. Since the values have become so small we can use the QGIS software to view the images.</p>
+
+                <div class="blog-grid">
+                    <figure class="blog-figure">
+                        <img class="figure-img" src="Semantic_Segmentation/projreport-pics/8-image.png" alt="Satellite Image Sample">
+                        <figcaption class="figure-caption">Satellite Image Sample</figcaption>
+                    </figure>
+                    <figure class="blog-figure">
+                        <img class="figure-img" src="Semantic_Segmentation/projreport-pics/8-imgneu.png" alt="Age of building Sample">
+                        <figcaption class="figure-caption">Age of building Sample</figcaption>
+                    </figure>
+                </div>
+                <p class="figure-caption">Dataset Sample</p>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/8-ageqgis.png" alt="Age Sample Opened in QGIS">
+                    <figcaption class="figure-caption">Age Sample Opened in QGIS</figcaption>
+                </figure>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/8-processedage.png" alt="Relabeled Age Sample Opened in QGIS">
+                    <figcaption class="figure-caption">Relabeled Age Sample Opened in QGIS</figcaption>
+                </figure>
+
+                <h3>> Importing and data loading</h3>
+                <p>To start our training, we first create the setup and import part of the code. We code to prepare the environment, import frameworks, and initialize global hyperparameters. We first import fundamental PyTorch libraries for neural network design, optimization, and structural plumbing, alongside data tools like numpy, pandas, and scikit-image for managing geographic arrays and reading raw multi-band images. Since we put our dataset on Google Drive, we all the time need to allow access to the dataset, by mounting to Google Drive and establish target paths for tracking training metrics and saving checkpoints. Finally, we instantiate core constants that set the behavior of the network, such as locking the hardware execution path to a CUDA-enabled GPU, designating a small batch size of 4 to manage memory limits, and defining the target segmentation architecture to output four specific channels corresponding to the age categories.</p>
+                <p>Then we have the dataloading part that translates these raw files into an optimized pipeline using PyTorch's structured ingestion components. It defines a custom AmsterdamDataset class that dynamically checks training, validation, and testing directories, employing file name set intersections to guarantee that every input image perfectly matches its corresponding ground-truth segmentation age mask. When an item is called, the dataset reads the .tiff files, applies an Albumentations transformation pipeline that normalizes the RGB values to ImageNet standards, and converts the data into PyTorch tensors via ToTensorV2(). These datasets are then wrapped inside standard PyTorch DataLoader instances, which automate structural batching, shuffle the training sequence to eliminate ordering bias, and consistently yield paired mini-batches directly to the model during training loops.</p>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/importcode.png" alt="Code Excerpt of Import Cell">
+                    <figcaption class="figure-caption">Code Excerpt of Import Cell</figcaption>
+                </figure>
+
+                <h3>> Model Architecture and Training</h3>
+                <p>To build our model, we construct the architecture cell by cloning the code from a public GitHub repository directly into our active Colab environment and append its directory to our system path so Python can successfully discover and import the custom function for each model architecture that we want to use. We then instantiate our segmentation model configuration, since some model have different versions or backbone used. Finally, we finish configuring this segment by defining the class_weights penalty tensor to handle any pixel imbalances across background elements and historical structures, loading it directly into a standard cross-entropy loss function alongside an AdamW weight decay optimizer to handle gradient steps.</p>
+                <p>For the training cell we run forty epochs of training and also have checkpoint management. The code automatically scan for an existing progress file to resume training smoothly, restoring model weights, optimizer states, and past performance trackers if a crash occurs or runtime error or gpu limit which occurs often when we use the free tier of colab. We also implemented the Automatic Mixed Precision (AMP) through a PyTorch GradScaler context to save video memory and accelerate math operations by downscaling precision dynamically inside the forward pass. Finally, we execute the standard mini-batch pipeline by running data forward through the architecture, evaluating errors against our weighted cross-entropy criterion, unscaling gradients to safely clip their maximum norms at 1.0 to prevent mathematical instability, and executing backpropagation via the optimizer before applying PyTorch garbage collection at each epoch's conclusion.</p>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/train.png" alt="Code Excerpt of Training Cell">
+                    <figcaption class="figure-caption">Code Excerpt of Training Cell</figcaption>
+                </figure>
+
+                <h3>> Testing and Visualization</h3>
+                <p>After training the model, we then evaluate our final performance. Using the test set, we log the final accuracy metrics. We first load the best saved checkpoint weights from our training phase, put the model into evaluation mode, and initialize a global confusion matrix as a numpy array. Since we only want to test final generalization, we run a loop exclusively over the test loader under a gradient-free context, taking the argmax of the model's outputs to extract the predicted class for each pixel and accumulating them into our matrix. Finally, we calculate the final class IoUs, mean Intersection-over-Union (mIoU), and overall accuracy from this matrix, package these scores into a pandas DataFrame, and append or save the results into a CSV file on our drive.</p>
+                <p>Lastly, for visualization of our model's performance, we create a multi-panel analysis of a sample. We first load our best checkpoint weights, set the model to evaluation mode, and run a strict scanning loop over the validation loader to isolate a specific image patch that contains a specific threshold of all three age building categories. Once a qualifying patch is found, we pass it through a gradient-free forward pass, applying a bilinear interpolation step to automatically correct any resolution mismatches caused by different model architectures before extracting both the argmax predictions and soft probability scores. Finally, we use matplotlib to output a four-panel figure displaying the original satellite image, the ground truth mask with a custom color legend, the categorical model prediction map, and a continuous confidence heatmap.</p>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/eval.png" alt="Code Excerpt of Evaluating Cell">
+                    <figcaption class="figure-caption">Code Excerpt of Evaluating Cell</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">results.csv</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Results</h2>
+                <p>Here is a summary table of the results:</p>
+                <table class="blog-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>mIoU</th>
+                            <th>Overall Acc.</th>
+                            <th>IoU (Background)</th>
+                            <th>IoU (&lt;1981)</th>
+                            <th>IoU (1981--2001)</th>
+                            <th>IoU (&gt;=2001)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Milesial_UNet</td>
+                            <td>34.98</td>
+                            <td>76.59</td>
+                            <td>81.87</td>
+                            <td>27.80</td>
+                            <td>15.29</td>
+                            <td>14.97</td>
+                        </tr>
+                        <tr>
+                            <td>Efficient_UNet_B0</td>
+                            <td>35.48</td>
+                            <td>76.58</td>
+                            <td>81.25</td>
+                            <td>25.39</td>
+                            <td>14.52</td>
+                            <td>20.74</td>
+                        </tr>
+                        <tr>
+                            <td>FC_DenseNet67</td>
+                            <td>32.32</td>
+                            <td>80.31</td>
+                            <td>84.86</td>
+                            <td>8.64</td>
+                            <td>17.54</td>
+                            <td>18.24</td>
+                        </tr>
+                        <tr>
+                            <td>DeepLab_v3_Plus_ResNet</td>
+                            <td>35.29</td>
+                            <td>74.94</td>
+                            <td>79.08</td>
+                            <td>27.28</td>
+                            <td>14.67</td>
+                            <td>20.11</td>
+                        </tr>
+                        <tr>
+                            <td>SegFormer_B0</td>
+                            <td>30.29</td>
+                            <td>68.54</td>
+                            <td>72.13</td>
+                            <td>19.03</td>
+                            <td>13.27</td>
+                            <td>16.73</td>
+                        </tr>
+                        <tr>
+                            <td>HRNet_W48</td>
+                            <td>34.50</td>
+                            <td>75.84</td>
+                            <td>81.23</td>
+                            <td>23.06</td>
+                            <td>15.49</td>
+                            <td>18.20</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/comparison.png" alt="Bar Chart Comparison of Performance">
+                    <figcaption class="figure-caption">Bar Chart Comparison of Performance</figcaption>
+                </figure>
+
+                <h3>> U-net</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/unet3.png" alt="Result of U-Net">
+                    <figcaption class="figure-caption">Result of U-Net</figcaption>
+                </figure>
+
+                <h3>> Efficient U-net</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/efficient_unet.png" alt="Result of Efficient U-Net">
+                    <figcaption class="figure-caption">Result of Efficient U-Net</figcaption>
+                </figure>
+
+                <h3>> FC-Densenet</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/fcdensenet2.png" alt="Result of FC-Densenet">
+                    <figcaption class="figure-caption">Result of FC-Densenet</figcaption>
+                </figure>
+
+                <h3>> DeepLabV3</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/deeplab.png" alt="Result of DeepLabV3">
+                    <figcaption class="figure-caption">Result of DeepLabV3</figcaption>
+                </figure>
+
+                <h3>> SegFormer</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/segformer.png" alt="Result of SegFormer">
+                    <figcaption class="figure-caption">Result of SegFormer</figcaption>
+                </figure>
+
+                <h3>> HRNet</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/hrnet.png" alt="Result of HRNet">
+                    <figcaption class="figure-caption">Result of HRNet</figcaption>
+                </figure>
+                <p>From the results we can see that sometimes there’s a trade-off between overall accuracy and minority-class recognition, which is a common challenge in semantic segmentation. While FC_DenseNet67 achieved the highest overall accuracy at 80.31, a closer look at its class-specific breakdown reveals that this performance is heavily inflated by its strong classification of the background category (84.86 IoU), while severely failing on the scarcer &lt;=1981 building category with a critical IoU drop down to just 8.64. This discrepancy shows why we use mean Intersection-over-Union (mIoU)  as a far more reliable benchmark than raw accuracy for imbalanced datasets. In contrast, models like Efficient_UNet_B0 and DeepLab_v3_Plus_ResNet delivered the most robust and balanced performance across the entire dataset, having the highest mIoU values at 35.48 and 35.29, respectively. Showing great IoUs for the 3 building age categories.</p>
+                <p>Additionally, we can see that traditional convolutional neural network (CNN) architectures incorporating multi-scale feature aggregation or advanced backbones outperformed modern lightweight vision transformers in this specific context. SegFormer_B0 underperformed across all benchmarks, yielding the lowest mIoU (30.29) and overall accuracy (68.54), which suggests that transformer-based models may require substantially larger datasets or specialized hyperparameter tuning to accurately map detailed spatial representations compared to CNN models.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>exit. System uptime 1032 days. Built with plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
