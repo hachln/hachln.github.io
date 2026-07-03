@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/projects/verilens | dev.tty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-main);
+            margin-bottom: 1.5rem;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/projects</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">cat verilens.md</div>
+            </div>
+            <div class="window-content project-header-content">
+                <h1>VeriLens: A Multi-Modal AI Framework for Image Provenance and Contextual Verification</h1>
+                
+                <figure class="blog-figure" style="margin-top: 1.5rem; margin-bottom: 1rem;">
+                    <img class="figure-img" src="verilens/addcontext.png" alt="VeriLens Interface Banner">
+                </figure>
+
+                <div class="project-links">
+                    <a href="https://github.com/hachln/VerilensAI" target="_blank" class="btn-primary"><i class="fab fa-github"></i> Source Code</a>
+                    <a href="verilens/Verilens_Paper.pdf" target="_blank" class="btn-secondary"><i class="fa-solid fa-file-pdf"></i> Read Paper</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">background.txt</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Background: The Problem with Visual Misinformation</h2>
+                <p>The rapid digitization of information has fundamentally transformed how we consume and share news. While this has democratized information, it has also created a massive challenge: false news spreads significantly faster and farther than truthful news online. Where humans are primarily responsible for its circulation.</p>
+                <p>This problem has only intensified with the rise of accessible generative AI tools. Recent studies show that AI-generated fake news is shared at similar rates to human-made fake news, proving that automated content is just as persuasive.</p>
+                <p>Vulnerability spans across all demographics. Older adults, often with lower digital literacy, are disproportionately exposed to and likely to share fake news. At the same time, despite having higher awareness, younger generations and digital natives still struggle to accurately differentiate deceptive content from legitimate information.</p>
+                <p>One particularly powerful form of misinformation is the "recontextualization" of images. These aren't necessarily deepfakes or fabricated images, they are often completely authentic images that have been removed from their original context and paired with misleading captions to drive a false narrative.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">overview.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> The Solution: What is VeriLens?</h2>
+                <p>To address this, we developed <strong>VeriLens</strong>, an AI-powered browser extension designed to help users verify images and evaluate whether their associated claims are contextually accurate in real-time.</p>
+                <p>We wanted to build a tool that requires minimal technical knowledge, embedding digital literacy directly into everyday browsing behavior. By integrating reverse image search capabilities with multimodal artificial intelligence, VeriLens acts as an on-the-fly fact-checker.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">workflow.txt</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> How It Works: Technical Workflow</h2>
+                <p>Let's dive into how the system actually processes an image when a user encounters a dubious claim online. The workflow is broken down into four main steps:</p>
+
+                <h3>1. Activation</h3>
+                <p>When browsing the web, a user can simply right-click on any image and select the "Verify with VeriLens" option from the context menu. The extension will then prompt the user to input the caption or claim attached to that image.</p>
+                
+                <figure class="blog-figure" style="max-width: 500px; margin: 1rem 0;">
+                    <img class="figure-img" src="verilens/rightclick.png" alt="VeriLens Context Menu Activation">
+                    <figcaption class="figure-caption">Activating verification via right-click</figcaption>
+                </figure>
+
+                <h3>2. Provenance</h3>
+                <p>Once the claim is submitted, the extension performs a reverse image search using Google Lens (via SearchAPI). This step retrieves prior occurrences of the image online, establishes its earliest known publication date, and pulls relevant source links. By establishing the historical timeline, we build a factual foundation.</p>
+
+                <h3>3. AI Analysis</h3>
+                <p>Next, the retrieved historical context, the original image, and the user-provided claim are sent to a multimodal AI model (we used Gemini 2.5 Flash for our prototype). The AI evaluates the semantic consistency between all three elements, checking for temporal or geographic inconsistencies and assessing if the visual evidence actually supports the stated claim.</p>
+
+                <h3>4. Output</h3>
+                <p>Finally, the system generates a natural language explanation. It provides the user with the true context of the image, an evaluation of the specific claim, and a final credibility verdict (e.g., confirming if a claim is completely false).</p>
+                
+                <figure class="blog-figure" style="max-width: 500px; margin: 1rem 0;">
+                    <img class="figure-img" src="verilens/output.png" alt="VeriLens AI Verification Output Panel">
+                    <figcaption class="figure-caption">Final credibility evaluation output</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">architecture_ethics.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Architecture & Ethical Safeguards</h2>
+                <p>The technical architecture consists of a JavaScript frontend for the browser extension, which communicates securely via HTTPS to a backend server. The backend acts as an API gateway managing requests between SearchAPI and Gemini.</p>
+                <p>When dealing with user browsing data, privacy is a major concern. To protect users, we designed the system for transient data processing. Images and claims are processed on the fly and are not permanently stored, minimizing privacy risks. Additionally, we implemented a caching mechanism that stores frequently searched metadata to reduce redundant API calls and keep operational costs down.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">feasibility.csv</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Experiment & Feasibility</h2>
+                <p>To ensure the project was practical, we ran a cost-feasibility analysis on our prototype.</p>
+                <p>Assuming an estimation of two searches per day over a month for an individual user, the operational expenses remain highly efficient. Utilizing Google Lens for the reverse search and Gemini 2.5 Flash for the multimodal analysis, our estimated monthly operational cost for 10,000 searches sits at $51.25. This translates to roughly <strong>$0.51 per user per month</strong>. Because the architecture is modular, it's highly scalable and allows for seamless integration with alternative APIs if pricing structures change.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">conclusion.txt</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Conclusion</h2>
+                <p>By empowering individuals at the exact point of content consumption, VeriLens can meaningfully interrupt the misinformation cycle. Rather than expecting users to independently cross-reference fact-checking websites, VeriLens brings the truth directly to the visual web, helping users transition from simple awareness to active discernment.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">presentation.mp4</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Video Presentation and Demo</h2>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/-kOrtw3-eHk" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>exit. Built with plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
