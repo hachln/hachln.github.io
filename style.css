@@ -33,7 +33,7 @@ body {
     background-color: var(--bg-main);
     
     /* Wallpaper Setting */
-    background-image: url('./home/fog_forest_1.png'); 
+    background-image: url('./home/fog_forest_1.webp'); 
     background-size: cover;
     background-position: center;
     background-attachment: fixed;

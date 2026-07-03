@@ -121,3 +121,30 @@ if (track && slides.length > 0) {
         moveToSlide(currentSlide, slides[targetIndex], currentDot, targetDot);
     });
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+    const latestGrid = document.getElementById('latest-projects-grid');
+    
+    if (latestGrid) {
+        // Fetch the HTML from your projects page
+        fetch('projectsp.html')
+            .then(response => response.text())
+            .then(html => {
+                // Parse the fetched string into a readable DOM object
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Select all project cards from the fetched page
+                const allProjects = doc.querySelectorAll('.project-card');
+                
+                // Loop through and append only the first 3
+                for (let i = 0; i < 3 && i < allProjects.length; i++) {
+                    latestGrid.appendChild(allProjects[i]);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading projects:', error);
+                latestGrid.innerHTML = '<p style="color: var(--color-red);">Failed to load projects. Please try again.</p>';
+            });
+    }
+});
