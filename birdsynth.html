@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/projects/birdsynth | dev.tty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- MathJax for rendering equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <!-- Chart.js for rendering graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-main);
+            margin-bottom: 1.5rem;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 1.5rem 0;
+            background: rgba(45, 53, 59, 0.5);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-main);
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/projects</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">cat birdsynth.md</div>
+            </div>
+            <div class="window-content project-header-content">
+                <h1>BirdSynth: An ESP32 Digital Bird Synthesizer</h1>
+                
+                <figure class="blog-figure" style="margin-top: 1.5rem; margin-bottom: 1rem;">
+                    <img class="figure-img" src="birdsynth/On-board.jpg" alt="Circuit of BirdSynth">
+                    <figcaption class="figure-caption">Figure 1: Circuit of BirdSynth</figcaption>
+                </figure>
+
+                <div class="project-links">
+                    <a href="#" target="_blank" class="btn-primary"><i class="fab fa-github"></i> Source Code</a>
+                    <a href="#" target="_blank" class="btn-secondary"><i class="fa-solid fa-file-pdf"></i> Read Paper</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">background.txt</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Background</h2>
+                <p>One time I visited a museum and there was an interesting exhibition showcasing different calls of a variety of birds. I found that very interesting and and want to try and build something similar. Although that exhibition used the recorded calls of the birds, I thought synthesizing them from basic elements would be a great idea and could be an interesting way for us to observe how certain variables interact and combine into the sounds that we hear coming out of the trees when we wake up in the morning (or stayed up to late).</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">hardware.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Hardware Components</h2>
+                <p>Here are the hardware that we used for the project:</p>
+                <ul class="interests-list">
+                    <li><strong>ESP32 Microcontroller</strong>: This dual-core chip acts as the brain of the synthesizer. We split the workload: Core 0 handles the graphical interface and reads the physical knobs, while Core 1 is strictly dedicated to high-speed audio calculation and USB telemetry.</li>
+                    <li><strong>Potentiometers (Knobs)</strong>: As shown on the breadboard, there are four potentiometers. These act as analog inputs, allowing for real-time control over the bird sound's parameters: Pitch, Modulation, Cadence, and Envelope.</li>
+                    <li><strong>0.96-inch OLED Screen</strong>: We use this as visual indicators for this project. It draws live progress bars for the 4 parameters so you can see exactly where the knobs are dialed in.</li>
+                </ul>
+                <p>For a setup with an external speaker we can use a DAC and amplifier like the GY-PCM5102 and the PAM8403.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">synthesis_math.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> The Math: Synthesis & Variables</h2>
+                <p>We utilize the four variables to shape the bird sound synthesis and try to make it more organic sounding.</p>
+
+                <h3>1. Pitch (Carrier Frequency, \(f_c\))</h3>
+                <p>This is the foundational pitch of the bird chirp, mapped between 300Hz and 4000Hz. A lower knob value results in a slower wave (lower pitch), while a higher value creates a tighter, faster wave (higher pitch).</p>
+                
+                <div class="chart-container">
+                    <canvas id="pitchChart"></canvas>
+                </div>
+
+                <h3>2. Modulation (Mod Freq, \(f_m\), and Depth)</h3>
+                <p>This dictates how fast and how intensely the base pitch trills or wavers. To generate the sound digitally, the ESP32 calculates the phase increments for the modulator wave:</p>
+                <p>$$ \text{inc}_m = \frac{2\pi \cdot f_m}{\text{sampleRate}} $$</p>
+                
+                <p>It then generates the modulation wave and multiplies it by the modulation depth (scaled to 40% of the carrier frequency):</p>
+                <p>$$ \text{mod}_{wave} = \sin(\text{phase}_m) \times \text{modDepth} $$</p>
+
+                <p>This modulation wave offsets the base pitch, creating the final, fluctuating frequency for the current audio sample:</p>
+                <p>$$ f_{\text{current}} = f_c + modWave $$</p>
+
+                <div class="chart-container">
+                    <canvas id="modChart"></canvas>
+                </div>
+
+                <h3>3. Cadence</h3>
+                <p>Cadence controls the timing and delay between the chirps. Instead of a continuous drone, birds chirp in bursts. This variable dictates the pauses, ranging from rapid-fire 100ms bursts to longer 3000ms pauses.</p>
+                
+                <div class="chart-container">
+                    <canvas id="cadenceChart"></canvas>
+                </div>
+
+                <h3>4. Envelope (ENV)</h3>
+                <p>While the carrier and modulator define the frequencies, the envelope dictates the overall volume shape (Attack and Decay) of the synthesized sound over time, giving it a natural, plucked, or swelling characteristic rather than a harsh beep.</p>
+                
+                <div class="chart-container">
+                    <canvas id="envChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">python_telemetry.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Digital Recording via Python</h2>
+                <p>To more accuractely capture audio we stream the pure digital audio telemetry directly to a computer.</p>
+                <ul class="interests-list">
+                    <li>The ESP32 sends 16-bit audio data over serial at an ultra-fast baud rate of 921600.</li>
+                    <li>A custom Python script opens this serial port and constantly listens for a specific text packet starting with "SYNC:". When detected, it parses the live knob data (Pitch, Mod, Cadence, Env) and prints it neatly to the terminal.</li>
+                    <li>Immediately following the text, the script grabs the raw binary audio data in 512-byte chunks.</li>
+                    <li>It uses the <code>pyaudio</code> library to stream the sound to the computer's speakers in real time.</li>
+                    <li>Concurrently, it uses Python's native <code>wave</code> library to write these raw frames directly into a <code>.wav</code> file.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">demos.mp4</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Demo</h2>
+                <p>Here are some demonstration of our Bird Synthesizer mimicing popular birds.</p>
+                
+                <h3>Great Horned Owl</h3>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/du914pfOyX8" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+
+                <h3>American Crow</h3>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/UnQx-fNgLME" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+
+                <h3>Red Tailed Hawk</h3>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/X9xNjkKIluQ" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+
+                <h3>Can you guess this one</h3>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/KUNCZCRVAMI" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>exit. Built with plain HTML/CSS/JS and Chart.js for data visualization.</p>
+    </footer>
+
+    <!-- Chart.js Rendering Logic -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Shared config for styling
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#d3c6aa', font: { family: 'JetBrains Mono' } } } },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                },
+                elements: { point: { radius: 0 } }
+            };
+
+            // 1. Pitch Chart
+            const ctxPitch = document.getElementById('pitchChart').getContext('2d');
+            const xValues = Array.from({length: 200}, (_, i) => i * 0.1);
+            new Chart(ctxPitch, {
+                type: 'line',
+                data: {
+                    labels: xValues,
+                    datasets: [
+                        { label: 'Low Pitch', data: xValues.map(x => Math.sin(x) + 2.5), borderColor: '#7fbbb3', borderWidth: 2, tension: 0.4 },
+                        { label: 'High Pitch', data: xValues.map(x => Math.sin(4*x) - 0.5), borderColor: '#e67e80', borderWidth: 2, tension: 0.4 }
+                    ]
+                },
+                options: chartOptions
+            });
+
+            // 2. Modulation Chart
+            const ctxMod = document.getElementById('modChart').getContext('2d');
+            new Chart(ctxMod, {
+                type: 'line',
+                data: {
+                    labels: xValues,
+                    datasets: [
+                        { label: 'Modulator (LFO)', data: xValues.map(x => Math.sin(x) + 2.5), borderColor: '#7fbbb3', borderDash: [5, 5], borderWidth: 2, tension: 0.4 },
+                        { label: 'Modulated Audio', data: xValues.map(x => Math.sin(12*x + 2.5*Math.sin(x)) - 1), borderColor: '#e67e80', borderWidth: 2, tension: 0.4 }
+                    ]
+                },
+                options: chartOptions
+            });
+
+            // 3. Cadence Chart (Represented with Bar bursts)
+            const ctxCadence = document.getElementById('cadenceChart').getContext('2d');
+            const cadenceX = Array.from({length: 100}, (_, i) => i);
+            new Chart(ctxCadence, {
+                type: 'bar',
+                data: {
+                    labels: cadenceX,
+                    datasets: [
+                        {
+                            label: 'Fast Cadence',
+                            data: cadenceX.map(x => (x % 20 < 10) ? 1.5 : 0),
+                            backgroundColor: 'rgba(127, 187, 179, 0.6)'
+                        },
+                        {
+                            label: 'Slow Cadence',
+                            data: cadenceX.map(x => (x % 50 < 15) ? -1.5 : 0),
+                            backgroundColor: 'rgba(230, 126, 128, 0.6)'
+                        }
+                    ]
+                },
+                options: chartOptions
+            });
+
+            // 4. Envelope Chart
+            const ctxEnv = document.getElementById('envChart').getContext('2d');
+            const envX = Array.from({length: 300}, (_, i) => i * 0.03);
+            new Chart(ctxEnv, {
+                type: 'line',
+                data: {
+                    labels: envX,
+                    datasets: [
+                        {
+                            label: 'Envelope Outline (Attack/Decay)',
+                            data: envX.map(x => x <= 1.5 ? x/1.5 : (x > 1.5 && x < 8 ? 1 - (x-1.5)/6.5 : 0)),
+                            borderColor: '#a7b8a7',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            tension: 0
+                        },
+                        {
+                            label: 'Shaped Audio',
+                            data: envX.map(x => {
+                                let env = x <= 1.5 ? x/1.5 : (x > 1.5 && x < 8 ? 1 - (x-1.5)/6.5 : 0);
+                                return env * Math.sin(40*x);
+                            }),
+                            borderColor: '#e67e80',
+                            borderWidth: 2,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: chartOptions
+            });
+        });
+    </script>
+</body>
+</html>

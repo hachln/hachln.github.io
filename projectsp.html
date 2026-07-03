@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/projects | dev.tty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/projects</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane cv-pane">
+            <div class="window-header">
+                <div class="window-title">ls -la ~/projects/all</div>
+            </div>
+            <div class="window-content">
+                <h2 class="section-title">project.archive</h2>
+                <div class="projects-grid">
+                    
+                    <!-- BirdSynth -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="birdsynth/On-board.jpg" alt="BirdSynth Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>BirdSynth</h3>
+                            <p>An ESP32 Digital Bird Synthesizer. Uses basic waveform elements to organically synthesize various bird calls.</p>
+                            <div class="project-tech">
+                                <span>ESP32</span> <span>Python</span> <span>C++</span> <span>DSP</span>
+                            </div>
+                            <a href="birdsynth.html" class="project-link"><i class="fa-solid fa-arrow-right-to-bracket"></i> Details</a>
+                        </div>
+                    </div>
+
+                    <!-- Semantic Segmentation -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="Semantic_Segmentation/projreport-pics/8-image.png" alt="Semantic Segmentation Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>Semantic Segmentation</h3>
+                            <p>An exploratory learning project covering semantic segmentation on Amsterdam satellite imagery, comparing 6 different model architectures.</p>
+                            <div class="project-tech">
+                                <span>PyTorch</span> <span>Computer Vision</span> <span>Segmentation</span>
+                            </div>
+                            <a href="semantic_segmentation.html" class="project-link"><i class="fa-solid fa-arrow-right-to-bracket"></i> Details</a>
+                        </div>
+                    </div>
+
+                    <!-- InvestSync Event Helper -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="investsync/investsyncthumb.png" alt="InvestSync Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>InvestSync Event Helper</h3>
+                            <p>An event registration and attendance management webapp. Utilizes account management and authentication through google account. Implemented QR-based check-in system.</p>
+                            <div class="project-tech">
+                                <span>TypeScript</span> <span>Next.js</span> <span>Firebase</span> <span>Tailwind CSS</span>
+                            </div>
+                            <a href="https://github.com/hachln/Investsync_EventHelper" class="project-link" target="_blank"><i class="fab fa-github"></i> Source</a>
+                        </div>
+                    </div>
+
+                    <!-- PPIT-SZ Website -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="ppit-website/1.png" alt="PPIT-SZ Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>PPIT-SZ Website</h3>
+                            <p>A modern, responsive website for the PPIT-SZ organization.</p>
+                            <div class="project-tech">
+                                <span>TypeScript</span> <span>Next.js</span> <span>Vercel</span> <span>Tailwind CSS</span>
+                            </div>
+                            <a href="ppit-website.html" class="project-link"><i class="fa-solid fa-arrow-right-to-bracket"></i> Details</a>
+                        </div>
+                    </div>
+
+                    <!-- Spes Pew Pew -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="spespp/spesppthumb.png" alt="Spes Pew Pew Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>Spes Pew Pew</h3>
+                            <p>A short shooter minigame built for a school exhibition built in Godot.</p>
+                            <div class="project-tech">
+                                <span>Godot</span> <span>GdScript</span>
+                            </div>
+                            <a href="https://hakuron.itch.io/spes-tembak" target="_blank" class="project-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> Source</a>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>EOF. Built with plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
