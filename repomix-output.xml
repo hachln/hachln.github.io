@@ -1,0 +1,2518 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+birdsynth2/
+  birdsynth.pdf
+  main.tex
+  On-board.jpg
+home/
+  fog_forest_1.png
+  fog_forest_1.webp
+  portrait.jpg
+investsync/
+  investsyncthumb.png
+ppit-website/
+  1.png
+  2.png
+  3.png
+  4.png
+  5.png
+Semantic_Segmentation/
+  projreport-pics/
+    8-age.png
+    8-ageqgis.png
+    8-image.png
+    8-imgneu.png
+    8-processedage.png
+    architec.png
+    comparison.png
+    datloader.png
+    deeplab.png
+    efficient_unet.png
+    eval.png
+    fcdensenet2.png
+    hrnet.png
+    importcode.png
+    segformer.png
+    train.png
+    unet3.png
+    visual.png
+  main.tex
+  Semantic_Segmentation.pdf
+spespp/
+  spesppthumb.png
+verilens/
+  addcontext.png
+  output.png
+  rightclick.png
+  Verilens_Paper.pdf
+  verilens.md
+  verilenslogo.png
+birdsynth.html
+index.html
+ppit-website.html
+project.html
+projectsp.html
+README.md
+script.js
+semantic_segmentation.html
+style.css
+verilens.html
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="birdsynth2/main.tex">
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage{pgfplots}
+\usepackage{hyperref}
+\pgfplotsset{compat=1.18}
+
+\title{BirdSynth: An ESP32 Digital Bird Synthesizer}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\linewidth]{On-board.jpg}
+    \caption{Circuit of BirdSynth}
+    \label{fig:placeholder}
+\end{figure}
+
+\section*{Background}
+One time I visited a museum and there was an interesting exhibition showcasing different calls of a variety of birds. I found that very interesting and and want to try and build something similar. Although that exhibition used the recorded calls of the birds, I thought synthesizing them from basic elements would be a great idea and could be an interesting way for us to observe how certain variables interact and combine into the sounds that we hear coming out of the trees when we wake up in the morning (or stayed up to late). 
+
+\section*{Hardware Components}
+Here are the hardware that we used for the project:
+
+\begin{itemize}
+    \item \textbf{ESP32 Microcontroller}: This dual-core chip acts as the brain of the synthesizer. We split the workload: Core 0 handles the graphical interface and reads the physical knobs, while Core 1 is strictly dedicated to high-speed audio calculation and USB telemetry.
+    \item \textbf{Potentiometers (Knobs)}: As shown on the breadboard, there are four potentiometers. These act as analog inputs, allowing for real-time control over the bird sound's parameters: Pitch, Modulation, Cadence, and Envelope. 
+    \item \textbf{0.96-inch OLED Screen}: We use this as visual indicators for this project. It draws live progress bars for the 4 parameters so you can see exactly where the knobs are dialed in.
+\end{itemize}
+
+\noindent
+For a setup with an external speaker we can use a DAC and amplifier like the GY-PCM5102 and the PAM8403.
+
+\section*{The Math: Synthesis \& Variables}
+
+We utilize the four variables to shape the bird sound synthesis and try to make it more organic sounding.
+
+\subsection*{1. Pitch (Carrier Frequency, $f_c$)}
+This is the foundational pitch of the bird chirp, mapped between 300Hz and 4000Hz. A lower knob value results in a slower wave (lower pitch), while a higher value creates a tighter, faster wave (higher pitch).
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.9\textwidth, height=4cm, 
+    domain=0:4*pi, samples=200, 
+    xmax=16, % Extended to make room for text
+    axis lines=none, 
+    title={Pitch: Low Frequency vs. High Frequency}
+]
+    % Low Pitch
+    \addplot [blue, thick] {sin(deg(x)) + 2.5}; 
+    \node[blue, right] at (axis cs: 4*pi, 2.5) {Low Pitch};
+    
+    % High Pitch
+    \addplot [red, thick] {sin(deg(4*x)) - 0.5}; 
+    \node[red, right] at (axis cs: 4*pi, -0.5) {High Pitch};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+\subsection*{2. Modulation (Mod Freq, $f_m$, and Depth)}
+This dictates how fast and how intensely the base pitch trills or wavers. To generate the sound digitally, the ESP32 calculates the phase increments for the modulator wave:
+$$ \text{inc}_m = \frac{2\pi \cdot f_m}{\text{sampleRate}} $$
+
+It then generates the modulation wave and multiplies it by the modulation depth (scaled to 40\% of the carrier frequency):
+$$ \text{$mod_{wave}$} = \sin(\text{phase}_m) \times \text{modDepth} $$
+
+This modulation wave offsets the base pitch, creating the final, fluctuating frequency for the current audio sample:
+$$ f_{\text{current}} = f_c + \text{mod\_wave} $$
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.9\textwidth, height=5.5cm, 
+    domain=0:4*pi, samples=300, 
+    xmax=20, % Extended to make room for long text labels
+    axis lines=none, 
+    title={Modulation: Warping the Carrier Wave}
+]
+    % Modulator Wave 
+    \addplot [blue, thick, dashed] {sin(deg(x)) + 2.5};
+    \node[blue, right] at (axis cs: 4*pi, 2.5) {Modulator (LFO)};
+    
+    % FM Wave 
+    \addplot [red, thick] {sin(deg(12*x + 2.5*sin(deg(x)))) - 1};
+    \node[red, right] at (axis cs: 4*pi, -1) {Modulated Audio};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+\subsection*{3. Cadence}
+Cadence controls the timing and delay between the chirps. Instead of a continuous drone, birds chirp in bursts. This variable dictates the pauses, ranging from rapid-fire 100ms bursts to longer 3000ms pauses.
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.9\textwidth, height=4cm, 
+    xmin=0, xmax=12, ymin=-1.5, ymax=1.5, % Extended xmax for labels
+    axis lines=none, 
+    title={Cadence: Timing and Delays Between Chirps}
+]
+    % Fast Cadence
+    \draw[fill=blue, opacity=0.3] (0, 0.5) rectangle (1.5, 1.2);
+    \draw[fill=blue, opacity=0.3] (2, 0.5) rectangle (3.5, 1.2);
+    \draw[fill=blue, opacity=0.3] (4, 0.5) rectangle (5.5, 1.2);
+    \draw[fill=blue, opacity=0.3] (6, 0.5) rectangle (7.5, 1.2);
+    \node[blue, right] at (7.5, 0.85) {Fast Cadence};
+
+    % Slow Cadence
+    \draw[fill=red, opacity=0.3] (0, -1.2) rectangle (1.5, -0.5);
+    \draw[fill=red, opacity=0.3] (5.5, -1.2) rectangle (7.0, -0.5);
+    \node[red, right] at (7.0, -0.85) {Slow Cadence};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+\subsection*{4. Envelope (ENV)}
+While the carrier and modulator define the frequencies, the envelope dictates the overall volume shape (Attack and Decay) of the synthesized sound over time, giving it a natural, plucked, or swelling characteristic rather than a harsh beep.
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.9\textwidth, height=4.5cm, 
+    domain=0:8, samples=400, 
+    ymax=1.5, % Extended ymax so the top label doesn't get cut off
+    axis lines=none, 
+    title={Envelope: Shaping the Sound's Volume}
+]
+    % Envelope Outline (Dashed)
+    \addplot [black, thick, dashed] coordinates {(0,0) (1.5,1) (8,0)};
+    \node[black, above] at (1.5, 1) {Attack Peak};
+    \node[black, above] at (5, 0.4) {Decay Tail};
+    
+    % Filled/shaped wave
+    \addplot [red, thick] { (x<=1.5)*(x/1.5)*sin(deg(40*x)) + (x>1.5)*(1 - (x-1.5)/6.5)*sin(deg(40*x)) };
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+\section*{Digital Recording via Python}
+To more accuractely capture audio we stream the pure digital audio telemetry directly to a computer. 
+
+\begin{itemize}
+    \item The ESP32 sends 16-bit audio data over serial at an ultra-fast baud rate of 921600.
+    \item A custom Python script opens this serial port and constantly listens for a specific text packet starting with ``SYNC:''. When detected, it parses the live knob data (Pitch, Mod, Cadence, Env) and prints it neatly to the terminal.
+    \item Immediately following the text, the script grabs the raw binary audio data in 512-byte chunks.
+    \item It uses the \texttt{pyaudio} library to stream the sound to the computer's speakers in real time.
+    \item Concurrently, it uses Python's native \texttt{wave} library to write these raw frames directly into a \texttt{.wav} file.  
+\end{itemize}
+
+\section*{Demo}
+Here are some demonstration of our Bird Synthesizer mimicing popular birds
+\subsection*{Great Horned Owl}
+\href{https://youtu.be/du914pfOyX8}{Video}.
+\subsection*{American Crow}
+\href{https://youtu.be/UnQx-fNgLME}{Video}.
+\subsection*{Red Tailed Hawk}
+\href{https://youtu.be/X9xNjkKIluQ}{Video}.
+\subsection*{Can you guess this one}
+\href{https://youtu.be/KUNCZCRVAMI}{Video}.
+\end{document}
+</file>
+
+<file path="Semantic_Segmentation/main.tex">
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amssymb}   % Required for the \blacksquare symbol
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage{float}
+\geometry{a4paper, margin=1in}
+\usepackage{booktabs}
+
+\title{Semantic Segmentation}
+
+
+\begin{document}
+
+\maketitle
+
+\section{What is Semantic segmentation?}
+In short, it is a technique in computer vision that assigns a value to each pixel. It is different from other techniques that count whole objects or instances for example. It can be used for automated driving, medical imaging, or even satellite imaging.
+\\
+
+\textbf{What are some examples of model architecture for this task?}
+
+\begin{itemize}[label=\raisebox{0.25ex}{\tiny$\blacksquare$}, itemsep=1em]
+    \item \textbf{U-net} \\
+    A model with the foundational encoder-decoder architecture characterized by its symmetric U shape, as the name suggests, and direct skip connections that connect the gap between low-level spatial details and high-level semantic context.
+    
+    \item \textbf{Efficient U-net} \\
+    An upgraded model to the standard U-Net that swaps the traditional encoder for a pre-trained EfficientNet, using compound scaling to achieve higher accuracy with significantly less computational overhead.
+    
+    \item \textbf{Deeplab V3+} \\
+    A scale-aware architecture that uses dilated convolutions and a spatial pyramid pooling module (ASPP) to see objects at different sizes while maintaining a dense feature map.
+    
+    \item \textbf{SegFormer} \\
+    A modern Transformer-based model that eliminates the need for positional encodings and uses a simple MLP decoder, offering a highly efficient, scalable, and robust alternative to traditional CNN-based segmentation.
+    
+    \item \textbf{HRNet} \\
+    A unique model architecture that maintains high-resolution representations in parallel branches throughout the entire network, constantly fusing multi-scale information to preserve better spatial precision.
+    
+    \item \textbf{FC-DenseNet} \\
+    An architecture that is comprised of dense connections that maximizes feature reuse and gradient flow by connecting every layer within a block to every other layer, resulting in a very parameter-efficient model for precise segmentation.
+\end{itemize}
+    
+\section{Experiment}
+Let’s try running a semantic segmentation task. We have a dataset of Satellite imagery from the city of Amsterdam. We split our data set into the training, validation, and test sets. The dataset contains a 512x512 image with 3 channels (RGB) in a TIFF file format for the image and also the year information attached to each pixel. We can run the experiment using google colab, that has cloud computing and GPU processing which is required extensively to train the models.
+
+\subsection{Relabeling}
+We the first relabel the data for the age component. Currently it is in the form of year (1994 for example), so we relabel into 4 categories for convenience. For values of $<$1981, we assign a value of 1, for values $>=$1981 and $<$2001, we assign a value of 2, then for values $>=2001$, assign a value of 3. For the background we simply assign a value of 0. Since the values have become so small we can use the QGIS software to view the images. 
+
+
+\begin{figure}[H]
+    \centering
+    
+    % --- Left Image ---
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        % Replace 'image1.png' with your file name
+        \includegraphics[width=\textwidth]{projreport-pics/8-image.png} 
+        \caption{Satellite Image Sample}
+        \label{fig:left_image}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        % Replace 'image2.jpg' with your file name
+        \includegraphics[width=\textwidth]{projreport-pics/8-imgneu.png} 
+        \caption{Age of building Sample}
+        \label{fig:right_image}
+    \end{minipage}
+    \vspace{10pt} % Adds a subtle vertical gap before the main caption
+    \caption{Dataset Sample}
+    \label{fig:side_by_side_layout}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/8-ageqgis.png}
+    \caption{Age Sample Opened in QGIS}
+    \label{fig:placeholder}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/8-processedage.png}
+    \caption{Relabeled Age Sample Opened in QGIS}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Importing and data loading}
+To start our training, we first create the setup and import part of the code. We code to prepare the environment, import frameworks, and initialize global hyperparameters. We first import fundamental PyTorch libraries for neural network design, optimization, and structural plumbing, alongside data tools like numpy, pandas, and scikit-image for managing geographic arrays and reading raw multi-band images. Since we put our dataset on Google Drive, we all the time need to allow access to the dataset, by mounting to Google Drive and establish target paths for tracking training metrics and saving checkpoints. Finally, we instantiate core constants that set the behavior of the network, such as locking the hardware execution path to a CUDA-enabled GPU, designating a small batch size of 4 to manage memory limits, and defining the target segmentation architecture to output four specific channels corresponding to the age categories.
+\\
+
+\noindent
+Then we have the dataloading part that translates these raw files into an optimized pipeline using PyTorch's structured ingestion components. It defines a custom AmsterdamDataset class that dynamically checks training, validation, and testing directories, employing file name set intersections to guarantee that every input image perfectly matches its corresponding ground-truth segmentation age mask. When an item is called, the dataset reads the .tiff files, applies an Albumentations transformation pipeline that normalizes the RGB values to ImageNet standards, and converts the data into PyTorch tensors via ToTensorV2(). These datasets are then wrapped inside standard PyTorch DataLoader instances, which automate structural batching, shuffle the training sequence to eliminate ordering bias, and consistently yield paired mini-batches directly to the model during training loops.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/importcode.png}
+    \caption{Code Excerpt of Import Cell}
+    \label{fig:placeholder}
+\end{figure}
+
+
+\subsection{Model Architecture and Training}
+To build our model, we construct the architecture cell by cloning the code from a public GitHub repository directly into our active Colab environment and append its directory to our system path so Python can successfully discover and import the custom function for each model architecture that we want to use. We then instantiate our segmentation model configuration, since some model have different versions or backbone used. Finally, we finish configuring this segment by defining the class\_weights penalty tensor to handle any pixel imbalances across background elements and historical structures, loading it directly into a standard cross-entropy loss function alongside an AdamW weight decay optimizer to handle gradient steps.
+\\
+
+\noindent
+For the training cell we run forty epochs of training and also have checkpoint management. The code automatically scan for an existing progress file to resume training smoothly, restoring model weights, optimizer states, and past performance trackers if a crash occurs or runtime error or gpu limit which occurs often when we use the free tier of colab. We also implemented the Automatic Mixed Precision (AMP) through a PyTorch GradScaler context to save video memory and accelerate math operations by downscaling precision dynamically inside the forward pass. Finally, we execute the standard mini-batch pipeline by running data forward through the architecture, evaluating errors against our weighted cross-entropy criterion, unscaling gradients to safely clip their maximum norms at 1.0 to prevent mathematical instability, and executing backpropagation via the optimizer before applying PyTorch garbage collection at each epoch's conclusion.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/train.png}
+    \caption{Code Excerpt of Training Cell}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Testing and Visualization}
+After training the model, we then evaluate our final performance. Using the test set, we log the final accuracy metrics. We first load the best saved checkpoint weights from our training phase, put the model into evaluation mode, and initialize a global confusion matrix as a numpy array. Since we only want to test final generalization, we run a loop exclusively over the test loader under a gradient-free context, taking the argmax of the model's outputs to extract the predicted class for each pixel and accumulating them into our matrix. Finally, we calculate the final class IoUs, mean Intersection-over-Union (mIoU), and overall accuracy from this matrix, package these scores into a pandas DataFrame, and append or save the results into a CSV file on our drive.
+\\
+
+\noindent
+Lastly, for visualization of our model's performance, we create a multi-panel analysis of a sample. We first load our best checkpoint weights, set the model to evaluation mode, and run a strict scanning loop over the validation loader to isolate a specific image patch that contains a specific threshold of all three age building categories. Once a qualifying patch is found, we pass it through a gradient-free forward pass, applying a bilinear interpolation step to automatically correct any resolution mismatches caused by different model architectures before extracting both the argmax predictions and soft probability scores. Finally, we use matplotlib to output a four-panel figure displaying the original satellite image, the ground truth mask with a custom color legend, the categorical model prediction map, and a continuous confidence heatmap.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/eval.png}
+    \caption{Code Excerpt of Evaluating Cell}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Results}
+Here is a summary table of the results:
+\begin{table}[ht]
+  \centering
+  \caption{Semantic segmentation metric comparisons across models.}
+  \label{tab:segmentation_results_2dp}
+  \resizebox{\textwidth}{!}{% % Forces the table to scale down to the text margin width
+    \begin{tabular}{lcccccc}
+      \toprule
+      \textbf{Model} & \textbf{mIoU} & \textbf{Overall Acc.} & \textbf{IoU (Background)} & \textbf{IoU ($<1981$)} & \textbf{IoU ($1981$--$2001$)} & \textbf{IoU ($\ge 2001$)} \\
+      \midrule
+      Milesial\_UNet            & 34.98 & 76.59 & 81.87 & 27.80 & 15.29 & 14.97 \\
+      Efficient\_UNet\_B0       & 35.48 & 76.58 & 81.25 & 25.39 & 14.52 & 20.74 \\
+      FC\_DenseNet67            & 32.32 & 80.31 & 84.86 & 8.64  & 17.54 & 18.24 \\
+      DeepLab\_v3\_Plus\_ResNet & 35.29 & 74.94 & 79.08 & 27.28 & 14.67 & 20.11 \\
+      SegFormer\_B0             & 30.29 & 68.54 & 72.13 & 19.03 & 13.27 & 16.73 \\
+      HRNet\_W48                & 34.50 & 75.84 & 81.23 & 23.06 & 15.49 & 18.20 \\
+      \bottomrule
+    \end{tabular}%
+  }
+\end{table}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/comparison.png}
+    \caption{Bar Chart Comparison of Performance}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsubsection{U-net}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/unet3.png}
+    \caption{Result of U-Net}
+    \label{fig:placeholder}
+\end{figure}
+\subsubsection{Efficient U-net}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/efficient_unet.png}
+    \caption{Result of Efficient U-Net}
+    \label{fig:placeholder}
+\end{figure}
+\subsubsection{FC-Densenet}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/fcdensenet2.png}
+    \caption{Result of FC-Densenet}
+    \label{fig:placeholder}
+\end{figure}
+\subsubsection{DeepLabV3}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/deeplab.png}
+    \caption{Result of DeepLabV3}
+    \label{fig:placeholder}
+\end{figure}
+\subsubsection{SegFormer}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/segformer.png}
+    \caption{Result of SegFormer}
+    \label{fig:placeholder}
+\end{figure}
+\subsubsection{HRNet}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{projreport-pics/hrnet.png}
+    \caption{Result of HRNet}
+    \label{fig:placeholder}
+\end{figure}
+
+From the results we can see that sometimes there's a trade-off between overall accuracy and minority-class recognition, which is a common challenge in semantic segmentation. While FC\_DenseNet67 achieved the highest overall accuracy at 80.31, a closer look at its class-specific breakdown reveals that this performance is heavily inflated by its strong classification of the background category (84.86 IoU), while severely failing on the scarcer $\le 1981$ building category with a critical IoU drop down to just 8.64. This discrepancy shows why we use mean Intersection-over-Union (mIoU) as a far more reliable benchmark than raw accuracy for imbalanced datasets. In contrast, models like Efficient\_UNet\_B0 and DeepLab\_v3\_Plus\_ResNet delivered the most robust and balanced performance across the entire dataset, having the highest mIoU values at 35.48 and 35.29, respectively. Showing great IoUs for the 3 building age categories.\\
+
+\noindent
+Additionally, we can see that traditional convolutional neural network (CNN) architectures incorporating multi-scale feature aggregation or advanced backbones outperformed modern lightweight vision transformers in this specific context. SegFormer\_B0 underperformed across all benchmarks, yielding the lowest mIoU (30.29) and overall accuracy (68.54), which suggests that transformer-based models may require substantially larger datasets or specialized hyperparameter tuning to accurately map detailed spatial representations compared to CNN models.
+
+\end{document}
+</file>
+
+<file path="verilens/verilens.md">
+# VeriLens: A Multi-Modal AI Framework for Image Provenance and Contextual Verification
+
+insert addcontent.png here
+
+## Background: The Problem with Visual Misinformation
+The rapid digitization of information has fundamentally transformed how we consume and share news. While this has democratized information, it has also created a massive challenge: false news spreads significantly faster and farther than truthful news online. Where humans are primarily responsible for its circulation. 
+
+This problem has only intensified with the rise of accessible generative AI tools. Recent studies show that AI-generated fake news is shared at similar rates to human-made fake news, proving that automated content is just as persuasive. 
+
+Vulnerability spans across all demographics. Older adults, often with lower digital literacy, are disproportionately exposed to and likely to share fake news. At the same time, despite having higher awareness, younger generations and digital natives still struggle to accurately differentiate deceptive content from legitimate information. 
+
+One particularly powerful form of misinformation is the "recontextualization" of images. These aren't necessarily deepfakes or fabricated images, they are often completely authentic images that have been removed from their original context and paired with misleading captions to drive a false narrative.
+
+## The Solution: What is VeriLens?
+To address this, we developed **VeriLens**, an AI-powered browser extension designed to help users verify images and evaluate whether their associated claims are contextually accurate in real-time. 
+
+We wanted to build a tool that requires minimal technical knowledge, embedding digital literacy directly into everyday browsing behavior. By integrating reverse image search capabilities with multimodal artificial intelligence, VeriLens acts as an on-the-fly fact-checker.
+
+## How It Works: Technical Workflow
+Let's dive into how the system actually processes an image when a user encounters a dubious claim online. The workflow is broken down into four main steps:
+
+### 1. Activation
+When browsing the web, a user can simply right-click on any image and select the "Verify with VeriLens" option from the context menu. The extension will then prompt the user to input the caption or claim attached to that image. 
+
+insert rightclick.png here
+
+### 2. Provenance 
+Once the claim is submitted, the extension performs a reverse image search using Google Lens (via SearchAPI). This step retrieves prior occurrences of the image online, establishes its earliest known publication date, and pulls relevant source links. By establishing the historical timeline, we build a factual foundation.
+
+### 3. AI Analysis
+Next, the retrieved historical context, the original image, and the user-provided claim are sent to a multimodal AI model (we used Gemini 2.5 Flash for our prototype). The AI evaluates the semantic consistency between all three elements, checking for temporal or geographic inconsistencies and assessing if the visual evidence actually supports the stated claim.
+
+### 4. Output
+Finally, the system generates a natural language explanation. It provides the user with the true context of the image, an evaluation of the specific claim, and a final credibility verdict (e.g., confirming if a claim is completely false).
+insert output.png here
+
+## Architecture & Ethical Safeguards
+The technical architecture consists of a JavaScript frontend for the browser extension, which communicates securely via HTTPS to a backend server. The backend acts as an API gateway managing requests between SearchAPI and Gemini. 
+
+When dealing with user browsing data, privacy is a major concern. To protect users, we designed the system for transient data processing. Images and claims are processed on the fly and are not permanently stored, minimizing privacy risks. Additionally, we implemented a caching mechanism that stores frequently searched metadata to reduce redundant API calls and keep operational costs down.
+
+## Experiment & Feasibility
+To ensure the project was practical, we ran a cost-feasibility analysis on our prototype. 
+
+Assuming an estimation of two searches per day over a month for an individual user, the operational expenses remain highly efficient. Utilizing Google Lens for the reverse search and Gemini 2.5 Flash for the multimodal analysis, our estimated monthly operational cost for 10,000 searches sits at $51.25. This translates to roughly **$0.51 per user per month**. Because the architecture is modular, it's highly scalable and allows for seamless integration with alternative APIs if pricing structures change.
+
+## Conclusion
+By empowering individuals at the exact point of content consumption, VeriLens can meaningfully interrupt the misinformation cycle. Rather than expecting users to independently cross-reference fact-checking websites, VeriLens brings the truth directly to the visual web, helping users transition from simple awareness to active discernment.
+
+## Video Presentation and Demo
+Embed https://youtu.be/-kOrtw3-eHk here
+</file>
+
+<file path="birdsynth.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/projects/birdsynth | dev.tty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- MathJax for rendering equations -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <!-- Chart.js for rendering graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-main);
+            margin-bottom: 1.5rem;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 1.5rem 0;
+            background: rgba(45, 53, 59, 0.5);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-main);
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/projects</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">cat birdsynth.md</div>
+            </div>
+            <div class="window-content project-header-content">
+                <h1>BirdSynth: An ESP32 Digital Bird Synthesizer</h1>
+                
+                <figure class="blog-figure" style="margin-top: 1.5rem; margin-bottom: 1rem;">
+                    <img class="figure-img" src="birdsynth2/On-board.jpg" alt="Circuit of BirdSynth">
+                    <figcaption class="figure-caption">Figure 1: Circuit of BirdSynth</figcaption>
+                </figure>
+
+                <div class="project-links">
+                    <a href="https://github.com/hachln/BirdSynth" target="_blank" class="btn-primary"><i class="fab fa-github"></i> Source Code</a>
+                    <a href="birdsynth2/birdsynth.pdf" target="_blank" class="btn-secondary"><i class="fa-solid fa-file-pdf"></i> Read Paper</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">background.txt</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Background</h2>
+                <p>One time I visited a museum and there was an interesting exhibition showcasing different calls of a variety of birds. I found that very interesting and and want to try and build something similar. Although that exhibition used the recorded calls of the birds, I thought synthesizing them from basic elements would be a great idea and could be an interesting way for us to observe how certain variables interact and combine into the sounds that we hear coming out of the trees when we wake up in the morning (or stayed up to late).</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">hardware.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Hardware Components</h2>
+                <p>Here are the hardware that we used for the project:</p>
+                <ul class="interests-list">
+                    <li><strong>ESP32 Microcontroller</strong>: This dual-core chip acts as the brain of the synthesizer. We split the workload: Core 0 handles the graphical interface and reads the physical knobs, while Core 1 is strictly dedicated to high-speed audio calculation and USB telemetry.</li>
+                    <li><strong>Potentiometers (Knobs)</strong>: As shown on the breadboard, there are four potentiometers. These act as analog inputs, allowing for real-time control over the bird sound's parameters: Pitch, Modulation, Cadence, and Envelope.</li>
+                    <li><strong>0.96-inch OLED Screen</strong>: We use this as visual indicators for this project. It draws live progress bars for the 4 parameters so you can see exactly where the knobs are dialed in.</li>
+                </ul>
+                <p>For a setup with an external speaker we can use a DAC and amplifier like the GY-PCM5102 and the PAM8403.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">synthesis_math.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> The Math: Synthesis & Variables</h2>
+                <p>We utilize the four variables to shape the bird sound synthesis and try to make it more organic sounding.</p>
+
+                <h3>1. Pitch (Carrier Frequency, \(f_c\))</h3>
+                <p>This is the foundational pitch of the bird chirp, mapped between 300Hz and 4000Hz. A lower knob value results in a slower wave (lower pitch), while a higher value creates a tighter, faster wave (higher pitch).</p>
+                
+                <div class="chart-container">
+                    <canvas id="pitchChart"></canvas>
+                </div>
+
+                <h3>2. Modulation (Mod Freq, \(f_m\), and Depth)</h3>
+                <p>This dictates how fast and how intensely the base pitch trills or wavers. To generate the sound digitally, the ESP32 calculates the phase increments for the modulator wave:</p>
+                <p>$$ \text{inc}_m = \frac{2\pi \cdot f_m}{\text{sampleRate}} $$</p>
+                
+                <p>It then generates the modulation wave and multiplies it by the modulation depth (scaled to 40% of the carrier frequency):</p>
+                <p>$$ \text{mod}_{wave} = \sin(\text{phase}_m) \times \text{modDepth} $$</p>
+
+                <p>This modulation wave offsets the base pitch, creating the final, fluctuating frequency for the current audio sample:</p>
+                <p>$$ f_{\text{current}} = f_c + modWave $$</p>
+
+                <div class="chart-container">
+                    <canvas id="modChart"></canvas>
+                </div>
+
+                <h3>3. Cadence</h3>
+                <p>Cadence controls the timing and delay between the chirps. Instead of a continuous drone, birds chirp in bursts. This variable dictates the pauses, ranging from rapid-fire 100ms bursts to longer 3000ms pauses.</p>
+                
+                <div class="chart-container">
+                    <canvas id="cadenceChart"></canvas>
+                </div>
+
+                <h3>4. Envelope (ENV)</h3>
+                <p>While the carrier and modulator define the frequencies, the envelope dictates the overall volume shape (Attack and Decay) of the synthesized sound over time, giving it a natural, plucked, or swelling characteristic rather than a harsh beep.</p>
+                
+                <div class="chart-container">
+                    <canvas id="envChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">python_telemetry.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Digital Recording via Python</h2>
+                <p>To more accuractely capture audio we stream the pure digital audio telemetry directly to a computer.</p>
+                <ul class="interests-list">
+                    <li>The ESP32 sends 16-bit audio data over serial at an ultra-fast baud rate of 921600.</li>
+                    <li>A custom Python script opens this serial port and constantly listens for a specific text packet starting with "SYNC:". When detected, it parses the live knob data (Pitch, Mod, Cadence, Env) and prints it neatly to the terminal.</li>
+                    <li>Immediately following the text, the script grabs the raw binary audio data in 512-byte chunks.</li>
+                    <li>It uses the <code>pyaudio</code> library to stream the sound to the computer's speakers in real time.</li>
+                    <li>Concurrently, it uses Python's native <code>wave</code> library to write these raw frames directly into a <code>.wav</code> file.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">demos.mp4</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Demo</h2>
+                <p>Here are some demonstration of our Bird Synthesizer mimicing popular birds.</p>
+                
+                <h3>Great Horned Owl</h3>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/du914pfOyX8" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+
+                <h3>American Crow</h3>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/UnQx-fNgLME" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+
+                <h3>Red Tailed Hawk</h3>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/X9xNjkKIluQ" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+
+                <h3>Can you guess this one</h3>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/KUNCZCRVAMI" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>exit. Built with plain HTML/CSS/JS and Chart.js for data visualization.</p>
+    </footer>
+
+    <!-- Chart.js Rendering Logic -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Shared config for styling
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#d3c6aa', font: { family: 'JetBrains Mono' } } } },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                },
+                elements: { point: { radius: 0 } }
+            };
+
+            // 1. Pitch Chart
+            const ctxPitch = document.getElementById('pitchChart').getContext('2d');
+            const xValues = Array.from({length: 200}, (_, i) => i * 0.1);
+            new Chart(ctxPitch, {
+                type: 'line',
+                data: {
+                    labels: xValues,
+                    datasets: [
+                        { label: 'Low Pitch', data: xValues.map(x => Math.sin(x) + 2.5), borderColor: '#7fbbb3', borderWidth: 2, tension: 0.4 },
+                        { label: 'High Pitch', data: xValues.map(x => Math.sin(4*x) - 0.5), borderColor: '#e67e80', borderWidth: 2, tension: 0.4 }
+                    ]
+                },
+                options: chartOptions
+            });
+
+            // 2. Modulation Chart
+            const ctxMod = document.getElementById('modChart').getContext('2d');
+            new Chart(ctxMod, {
+                type: 'line',
+                data: {
+                    labels: xValues,
+                    datasets: [
+                        { label: 'Modulator (LFO)', data: xValues.map(x => Math.sin(x) + 2.5), borderColor: '#7fbbb3', borderDash: [5, 5], borderWidth: 2, tension: 0.4 },
+                        { label: 'Modulated Audio', data: xValues.map(x => Math.sin(12*x + 2.5*Math.sin(x)) - 1), borderColor: '#e67e80', borderWidth: 2, tension: 0.4 }
+                    ]
+                },
+                options: chartOptions
+            });
+
+            // 3. Cadence Chart (Represented with Bar bursts)
+            const ctxCadence = document.getElementById('cadenceChart').getContext('2d');
+            const cadenceX = Array.from({length: 100}, (_, i) => i);
+            new Chart(ctxCadence, {
+                type: 'bar',
+                data: {
+                    labels: cadenceX,
+                    datasets: [
+                        {
+                            label: 'Fast Cadence',
+                            data: cadenceX.map(x => (x % 20 < 10) ? 1.5 : 0),
+                            backgroundColor: 'rgba(127, 187, 179, 0.6)'
+                        },
+                        {
+                            label: 'Slow Cadence',
+                            data: cadenceX.map(x => (x % 50 < 15) ? -1.5 : 0),
+                            backgroundColor: 'rgba(230, 126, 128, 0.6)'
+                        }
+                    ]
+                },
+                options: chartOptions
+            });
+
+            // 4. Envelope Chart
+            const ctxEnv = document.getElementById('envChart').getContext('2d');
+            const envX = Array.from({length: 300}, (_, i) => i * 0.03);
+            new Chart(ctxEnv, {
+                type: 'line',
+                data: {
+                    labels: envX,
+                    datasets: [
+                        {
+                            label: 'Envelope Outline (Attack/Decay)',
+                            data: envX.map(x => x <= 1.5 ? x/1.5 : (x > 1.5 && x < 8 ? 1 - (x-1.5)/6.5 : 0)),
+                            borderColor: '#a7b8a7',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            tension: 0
+                        },
+                        {
+                            label: 'Shaped Audio',
+                            data: envX.map(x => {
+                                let env = x <= 1.5 ? x/1.5 : (x > 1.5 && x < 8 ? 1 - (x-1.5)/6.5 : 0);
+                                return env * Math.sin(40*x);
+                            }),
+                            borderColor: '#e67e80',
+                            borderWidth: 2,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: chartOptions
+            });
+        });
+    </script>
+</body>
+</html>
+</file>
+
+<file path="index.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/.portfolio | Melvin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio</div>
+        <ul class="nav-links">
+            <li><a href="#hero">./about</a></li>
+            <li><a href="#education">./education</a></li>
+            <li><a href="#skills">./skills</a></li>
+            <li><a href="#interests">./interests</a></li>
+            <li><a href="#experience">./experience</a></li>
+            <li><a href="#projects">./projects</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="hero" class="window-pane terminal-pane">
+            <div class="window-header">
+                <div class="window-title">sh - Melvin@portfolio: ~ (80x24)</div>
+            </div>
+            <div class="window-content hero-content-wrapper">
+                <div class="hero-text-block">
+                    <p class="prompt"><span class="user">Melvin@portfolio</span>:<span class="dir">~</span>$ whoami</p>
+                    <h1 id="typewriter"></h1>
+                    <p class="subtitle">Sophomore Electrical Engineering Student. Learning Enthusiast.</p>
+                    <div class="social-links-container">
+                        <p class="link-label">Connect:</p>
+                        <div class="social-links-wrapper">
+                            <a href="https://github.com/hachln" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+                            <a href="https://www.linkedin.com/in/melvin-nchandra/" target="_blank" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                            <a href="mailto:melvinnchandra@gmail.com" title="Email"><i class="fas fa-envelope"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-portrait-block">
+                    <img src="./home/portrait.jpg" alt="Your Name Portrait" class="portrait-img">
+                </div>
+            </div>
+        </section>
+
+        <section id="education" class="window-pane cv-pane">
+            <div class="window-header">
+                <div class="window-title">education.txt</div>
+            </div>
+            <div class="window-content">
+                <h2>academic.record</h2>
+                <div class="timeline-item">
+                    <h3>B.Eng in Electrical and Computer Engineering</h3>
+                    <span class="date">Chinese University of Hong Kong, Shenzhen | 2024 - present</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="split-layout">
+            <section id="skills" class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">skills.json</div>
+                </div>
+                <div class="window-content">
+                    <h2>> competencies</h2>
+                    <div class="skills-container">
+                        <span class="skill-tag">Python</span>
+                        <span class="skill-tag">C++</span>
+                        <span class="skill-tag">R</span>
+                        <span class="skill-tag">Git</span>
+                        <span class="skill-tag">LaTeX</span>
+                        <span class="skill-tag">CSS</span>
+                        <span class="skill-tag">JavaScript</span>
+                        <span class="skill-tag">Linux</span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="interests" class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">interests.md</div>
+                </div>
+                <div class="window-content">
+                    <h2># personal.interests</h2>
+                    <p>When I'm not studying, I enjoy:</p>
+                    <br>
+                    <ul class="interests-list">
+                        <li>Exploring nature, taking walks and jogging.</li>
+                        <li>Learning new languages.</li>
+                        <li>Connecting and talking with new people.</li>
+                        <li>Playing strategy games.</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <section id="experience" class="window-pane cv-pane">
+            <div class="window-header">
+                <div class="window-title">experience.md</div>
+            </div>
+            <div class="window-content">
+                <h2>Experiences</h2>
+                <div class="timeline-item">
+                    <h3>IT Board Member <span>@ InvestSync</span></h3>
+                    <span class="date">Oct 2025 - Present</span>
+                    <ul class="interests-list">
+                        <li>Designed and Developed events registration and attendance webapp.</li>
+                        <li>Worked with Tailwind CSS, Next.js, and Firebase for projects.</li>
+                        <li>Collaborated with other developers and designers utilzing git.</li>
+                    </ul>
+                </div>
+                <div class="timeline-item">
+                    <h3>Student Assistant <span>@ Harmonia College</span></h3>
+                    <span class="date">Oct 2024 - Present</span>
+                    <ul class="interests-list">
+                        <li>Managed and Hosted college events.</li>
+                        <li>Handled administrative tasks and coordinated with college faculty.</li>
+                        <li>Designed promotional materials and Photographed for activities.</li>
+                    </ul>
+                </div>
+                <div class="timeline-item">
+                    <h3>IT Committee Member <span>@ PPITSZ</span></h3>
+                    <span class="date">Nov 2024 - Apr 2025</span>
+                    <ul class="interests-list">
+                        <li>Developed and maintained the organization's website.</li>
+                        <li>Utilized Tailwind CSS, Next.js, and Vercel for deployment.</li>
+                        <li>Coded a QR code based identification system for a large-scale event.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="projects" class="window-pane cv-pane">
+            <div class="window-header">
+                <div class="window-title">~/projects/latest</div>
+            </div>
+            <div class="window-content">
+                <h2 class="section-title">project.portfolio --latest 3</h2>
+                <div class="projects-grid" id="latest-projects-grid">
+                    
+                    
+                </div>
+
+                <div class="check-more-container">
+                    <a href="projectsp.html" class="btn-check-more">cd ./all_projects <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>EOF. Built with <i class="fas fa-heart" style="color: var(--fg-bright);"></i> and plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+</file>
+
+<file path="ppit-website.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/.portfolio | Melvin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/ppit-website</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">cat readme.md</div>
+            </div>
+            <div class="window-content project-header-content">
+                <h1>PPIT-SZ Website</h1>
+                <p class="subtitle">A modern, responsive website for the PPIT organization.</p>
+                <div class="project-links">
+                    <a href="https://github.com/hachln/ppitwebsite20242025" target="_blank" class="btn-primary"><i class="fab fa-github"></i> View Source Code</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">feh --scale-down images/*</div>
+            </div>
+            <div class="window-content carousel-wrapper">
+                <div class="carousel">
+                    <button class="carousel-btn prev-btn"><i class="fas fa-chevron-left"></i></button>
+                    
+                    <div class="carousel-track-container">
+                        <ul class="carousel-track">
+                            <li class="carousel-slide current-slide">
+                                <img src="./ppit-website/1.png" alt="Homepage Screenshot">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="./ppit-website/2.png" alt="Members Page Screenshot">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="./ppit-website/3.png" alt="Members Page Screenshot 2">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="./ppit-website/4.png" alt="Event Page Screenshot">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="./ppit-website/5.png" alt="FAQ Page Screenshot">
+                            </li>
+                        </ul>
+                    </div>
+
+                    <button class="carousel-btn next-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                
+                <div class="carousel-nav">
+                    
+                </div>
+            </div>
+        </section>
+
+        <div class="split-layout">
+            
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">details.txt</div>
+                </div>
+                <div class="window-content">
+                    <h2>> about_the_project</h2>
+                    <p>The PPIT Website is a modern, responsive website designed to showcase the organization's activities, events, members and FAQ. It features a clean design, size responsiveness, and intuitive navigation to provide an excellent user experience.</p>
+                    <br>
+                    <p><strong>Key Features:</strong></p>
+                    <ul class="interests-list">
+                        <li>Homepage with dynamic content.</li>
+                        <li>Members Page with detailed profiles.</li>
+                        <li>Events Page with description.</li>
+                        <li>FAQ Page with answers.</li>
+                    </ul>
+                    <br>
+                </div>
+            </section>
+
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">dependencies.toml</div>
+                </div>
+                <div class="window-content">
+                    <h2>> tech_stack</h2>
+                    <p>Languages and frameworks utilized in this build:</p>
+                    <div class="skills-container project-tech-stack">
+                        <span class="skill-tag">Typescript</span>
+                        <span class="skill-tag">JavaScript</span>
+                        <span class="skill-tag">Tailwind CSS</span>
+                        <span class="skill-tag">Next.js</span>
+                        <span class="skill-tag">Vercel</span>
+                    </div>
+
+                    <h2 style="margin-top: 2rem;">> statistics</h2>
+                    <ul class="interests-list meta-list">
+                        <li><strong>Status:</strong> Not in use (Newer version available)</li>
+                    
+                        <li><strong>Timeline:</strong> 3 Months</li>
+                        <li><strong>Role:</strong> Developer working with team</li>
+                    </ul>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>EOF. Built with <i class="fas fa-heart" style="color: var(--fg-bright);"></i> and plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+</file>
+
+<file path="project.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/projects/hypershell | dev.tty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/projects</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">cat readme.md</div>
+            </div>
+            <div class="window-content project-header-content">
+                <h1>HyperShell CLI</h1>
+                <p class="subtitle">A high-performance shell companion tool written in Rust.</p>
+                <div class="project-links">
+                    <a href="#" target="_blank" class="btn-primary"><i class="fab fa-github"></i> View Source Code</a>
+                    <a href="#" target="_blank" class="btn-secondary"><i class="fas fa-book"></i> Read Documentation</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">feh --scale-down images/*</div>
+            </div>
+            <div class="window-content carousel-wrapper">
+                <div class="carousel">
+                    <button class="carousel-btn prev-btn"><i class="fas fa-chevron-left"></i></button>
+                    
+                    <div class="carousel-track-container">
+                        <ul class="carousel-track">
+                            <li class="carousel-slide current-slide">
+                                <img src="https://via.placeholder.com/800x450/323c41/d3c6aa?text=Project+Screenshot+1" alt="Screenshot 1">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="https://via.placeholder.com/800x450/2d353b/a7c080?text=Project+Screenshot+2" alt="Screenshot 2">
+                            </li>
+                            <li class="carousel-slide">
+                                <img src="https://via.placeholder.com/800x450/3d484d/7fbbb3?text=Project+Screenshot+3" alt="Screenshot 3">
+                            </li>
+                        </ul>
+                    </div>
+
+                    <button class="carousel-btn next-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                
+                <div class="carousel-nav">
+                    
+                </div>
+            </div>
+        </section>
+
+        <div class="split-layout">
+            
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">details.txt</div>
+                </div>
+                <div class="window-content">
+                    <h2>> about_the_project</h2>
+                    <p>HyperShell was born out of a frustration with sluggish terminal startup times and bloated dotfile configurations. The goal was to create a lightweight, compiled alternative that handles complex parsing without blocking the main thread.</p>
+                    <br>
+                    <p><strong>Key Features:</strong></p>
+                    <ul class="interests-list">
+                        <li>Sub-millisecond prompt rendering.</li>
+                        <li>Asynchronous git status fetching.</li>
+                        <li>Built-in directory jumping (similar to zoxide).</li>
+                        <li>Configurable via a single, easily portable JSON file.</li>
+                    </ul>
+                    <br>
+                    <p>The architecture relies heavily on Rust's fearless concurrency model, utilizing crossbeam channels to manage background data fetching without interfering with the user's typing experience.</p>
+                </div>
+            </section>
+
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">dependencies.toml</div>
+                </div>
+                <div class="window-content">
+                    <h2>> tech_stack</h2>
+                    <p>Languages and frameworks utilized in this build:</p>
+                    <div class="skills-container project-tech-stack">
+                        <span class="skill-tag">Rust</span>
+                        <span class="skill-tag">Tokio (Async)</span>
+                        <span class="skill-tag">Serde</span>
+                        <span class="skill-tag">Clap (CLI)</span>
+                        <span class="skill-tag">GitHub Actions</span>
+                    </div>
+
+                    <h2 style="margin-top: 2rem;">> statistics</h2>
+                    <ul class="interests-list meta-list">
+                        <li><strong>Status:</strong> Active / Maintained</li>
+                        <li><strong>License:</strong> MIT</li>
+                        <li><strong>Timeline:</strong> 3 Months</li>
+                        <li><strong>Role:</strong> Sole Developer</li>
+                    </ul>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>exit. System uptime 1032 days. Built with plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+</file>
+
+<file path="projectsp.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/projects | dev.tty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/projects</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane cv-pane">
+            <div class="window-header">
+                <div class="window-title">ls -la ~/projects/all</div>
+            </div>
+            <div class="window-content">
+                <h2 class="section-title">project.archive</h2>
+                <div class="projects-grid">
+                    
+                    <!-- NEW: VeriLens -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="verilens/verilenslogo.png" alt="VeriLens Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>VeriLens</h3>
+                            <p>Browser Extension to fact check and provide context to images.</p>
+                            <div class="project-tech">
+                                <span>JavaScript</span> <span>Multimodal AI</span> <span>Gemini API</span> <span>OSINT</span>
+                            </div>
+                            <a href="verilens.html" class="project-link"><i class="fa-solid fa-arrow-right-to-bracket"></i> Details</a>
+                        </div>
+                    </div>
+
+                    <!-- BirdSynth -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="birdsynth2/On-board.jpg" alt="BirdSynth Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>BirdSynth</h3>
+                            <p>An ESP32 Digital Bird Synthesizer. Uses basic waveform elements to organically synthesize various bird calls.</p>
+                            <div class="project-tech">
+                                <span>ESP32</span> <span>Python</span> <span>C++</span> <span>DSP</span>
+                            </div>
+                            <a href="birdsynth.html" class="project-link"><i class="fa-solid fa-arrow-right-to-bracket"></i> Details</a>
+                        </div>
+                    </div>
+
+                    <!-- Semantic Segmentation -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="Semantic_Segmentation/projreport-pics/8-image.png" alt="Semantic Segmentation Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>Semantic Segmentation</h3>
+                            <p>An exploratory learning project covering semantic segmentation on Amsterdam satellite imagery, comparing 6 different model architectures.</p>
+                            <div class="project-tech">
+                                <span>PyTorch</span> <span>Computer Vision</span> <span>Segmentation</span>
+                            </div>
+                            <a href="semantic_segmentation.html" class="project-link"><i class="fa-solid fa-arrow-right-to-bracket"></i> Details</a>
+                        </div>
+                    </div>
+
+                    <!-- InvestSync Event Helper -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="investsync/investsyncthumb.png" alt="InvestSync Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>InvestSync Event Helper</h3>
+                            <p>An event registration and attendance management webapp. Utilizes account management and authentication through google account. Implemented QR-based check-in system.</p>
+                            <div class="project-tech">
+                                <span>TypeScript</span> <span>Next.js</span> <span>Firebase</span> <span>Tailwind CSS</span>
+                            </div>
+                            <a href="https://github.com/hachln/Investsync_EventHelper" class="project-link" target="_blank"><i class="fab fa-github"></i> Source</a>
+                        </div>
+                    </div>
+
+                    <!-- PPIT-SZ Website -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="ppit-website/1.png" alt="PPIT-SZ Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>PPIT-SZ Website</h3>
+                            <p>A modern, responsive website for the PPIT-SZ organization.</p>
+                            <div class="project-tech">
+                                <span>TypeScript</span> <span>Next.js</span> <span>Vercel</span> <span>Tailwind CSS</span>
+                            </div>
+                            <a href="ppit-website.html" class="project-link"><i class="fa-solid fa-arrow-right-to-bracket"></i> Details</a>
+                        </div>
+                    </div>
+
+                    <!-- Spes Pew Pew -->
+                    <div class="project-card">
+                        <div class="project-thumbnail">
+                            <img src="spespp/spesppthumb.png" alt="Spes Pew Pew Thumbnail">
+                        </div>
+                        <div class="window-content">
+                            <h3>Spes Pew Pew</h3>
+                            <p>A short shooter minigame built for a school exhibition built in Godot.</p>
+                            <div class="project-tech">
+                                <span>Godot</span> <span>GdScript</span>
+                            </div>
+                            <a href="https://hakuron.itch.io/spes-tembak" target="_blank" class="project-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> Source</a>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>EOF. Built with plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+</file>
+
+<file path="README.md">
+# hachln.github.io
+
+Portfolio site for Melvin. Built with plain HTML, CSS, and JavaScript (also with love).
+</file>
+
+<file path="script.js">
+// Typewriter Effect for the Hero Section
+const textArray = ["~ Hello, I'm Melvin!", "I build Websites & WebApps.", "I love learning new things.", "I solve hard problems."];
+const typingDelay = 90;
+const erasingDelay = 40;
+const newTextDelay = 2200; 
+let textArrayIndex = 0;
+let charIndex = 0;
+
+const typewriterElement = document.getElementById("typewriter");
+
+function type() {
+    if (charIndex < textArray[textArrayIndex].length) {
+        typewriterElement.textContent += textArray[textArrayIndex].charAt(charIndex);
+        charIndex++;
+        setTimeout(type, typingDelay);
+    } else {
+        setTimeout(erase, newTextDelay);
+    }
+}
+
+function erase() {
+    if (charIndex > 0) {
+        typewriterElement.textContent = textArray[textArrayIndex].substring(0, charIndex - 1);
+        charIndex--;
+        setTimeout(erase, erasingDelay);
+    } else {
+        textArrayIndex++;
+        if (textArrayIndex >= textArray.length) textArrayIndex = 0;
+        setTimeout(type, typingDelay + 1100);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Start typing effect with a small initial delay
+    if(textArray.length) setTimeout(type, 1000);
+
+    // Smooth Scrolling for navigation links
+    document.querySelectorAll('.navbar a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    });
+});
+
+/* =========================================
+   CAROUSEL LOGIC (For Project Pages)
+   ========================================= */
+const track = document.querySelector('.carousel-track');
+const slides = Array.from(track ? track.children : []);
+const nextButton = document.querySelector('.next-btn');
+const prevButton = document.querySelector('.prev-btn');
+const dotsNav = document.querySelector('.carousel-nav');
+
+if (track && slides.length > 0) {
+    // 1. Auto-generate the correct number of dots
+    dotsNav.innerHTML = ''; 
+    slides.forEach((_, index) => {
+        const dot = document.createElement('button');
+        dot.className = 'carousel-indicator';
+        if (index === 0) dot.classList.add('current-indicator');
+        dotsNav.appendChild(dot);
+    });
+    const dots = Array.from(dotsNav.children);
+
+    // 2. Position the slides (and update on window resize so it doesn't break)
+    const setPositions = () => {
+        const slideWidth = slides[0].getBoundingClientRect().width;
+        slides.forEach((slide, index) => {
+            slide.style.left = slideWidth * index + 'px';
+        });
+        // Snap back to current slide to prevent visual bugs on resize
+        const currentSlide = track.querySelector('.current-slide') || slides[0];
+        track.style.transform = 'translateX(-' + currentSlide.style.left + ')';
+    };
+    
+    setPositions();
+    window.addEventListener('resize', setPositions);
+
+    // 3. Main movement function
+    const moveToSlide = (currentSlide, targetSlide, currentDot, targetDot) => {
+        track.style.transform = 'translateX(-' + targetSlide.style.left + ')';
+        currentSlide.classList.remove('current-slide');
+        targetSlide.classList.add('current-slide');
+        
+        currentDot.classList.remove('current-indicator');
+        targetDot.classList.add('current-indicator');
+    };
+
+    // 4. Click Right (With perfect looping)
+    nextButton.addEventListener('click', () => {
+        const currentSlide = track.querySelector('.current-slide');
+        const currentIndex = slides.indexOf(currentSlide);
+        // This math guarantees it loops back to 0 when it hits the end
+        const nextIndex = (currentIndex + 1) % slides.length; 
+        
+        moveToSlide(currentSlide, slides[nextIndex], dots[currentIndex], dots[nextIndex]);
+    });
+
+    // 5. Click Left (With perfect looping)
+    prevButton.addEventListener('click', () => {
+        const currentSlide = track.querySelector('.current-slide');
+        const currentIndex = slides.indexOf(currentSlide);
+        // This math guarantees it loops to the end when clicking left on the first image
+        const prevIndex = (currentIndex - 1 + slides.length) % slides.length; 
+        
+        moveToSlide(currentSlide, slides[prevIndex], dots[currentIndex], dots[prevIndex]);
+    });
+
+    // 6. Click on a specific dot
+    dotsNav.addEventListener('click', e => {
+        const targetDot = e.target.closest('button');
+        if (!targetDot) return;
+
+        const currentSlide = track.querySelector('.current-slide');
+        const currentDot = dotsNav.querySelector('.current-indicator');
+        const targetIndex = dots.findIndex(dot => dot === targetDot);
+
+        moveToSlide(currentSlide, slides[targetIndex], currentDot, targetDot);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const latestGrid = document.getElementById('latest-projects-grid');
+    
+    if (latestGrid) {
+        // Fetch the HTML from your projects page
+        fetch('projectsp.html')
+            .then(response => response.text())
+            .then(html => {
+                // Parse the fetched string into a readable DOM object
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Select all project cards from the fetched page
+                const allProjects = doc.querySelectorAll('.project-card');
+                
+                // Loop through and append only the first 3
+                for (let i = 0; i < 3 && i < allProjects.length; i++) {
+                    latestGrid.appendChild(allProjects[i]);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading projects:', error);
+                latestGrid.innerHTML = '<p style="color: var(--color-red);">Failed to load projects. Please try again.</p>';
+            });
+    }
+});
+</file>
+
+<file path="semantic_segmentation.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/projects/semantic-segmentation | dev.tty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/projects</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">cat readme.md</div>
+            </div>
+            <div class="window-content project-header-content">
+                <h1>Semantic Segmentation</h1>
+                <div class="project-links">
+                    <a href="https://github.com/hachln/semanticSegmentation_Amsterdam" target="_blank" class="btn-primary"><i class="fab fa-github"></i> Source</a>
+                    <a href="Semantic_Segmentation/Semantic_Segmentation.pdf" target="_blank" class="btn-secondary"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                </div>
+            </div>
+        </section>
+
+        <div class="split-layout">
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">overview.txt</div>
+                </div>
+                <div class="window-content">
+                    <h2>> What is Semantic segmentation?</h2>
+                    <p>In short, it is a technique in computer vision that assigns a value to each pixel. It is different from other techniques that count whole objects or instances for example. It can be used for automated driving, medical imaging, or even satellite imaging.</p>
+                </div>
+            </section>
+
+            <section class="window-pane cv-pane">
+                <div class="window-header">
+                    <div class="window-title">models.txt</div>
+                </div>
+                <div class="window-content">
+                    <h2>> What are some examples of model architecture for this task?</h2>
+                    <ul class="interests-list">
+                        <li><strong>U-net</strong><br>A model with the foundational encoder-decoder architecture characterized by its symmetric U shape, as the name suggests, and direct skip connections that connect the gap between low-level spatial details and high-level semantic context.</li>
+                        <li><strong>Efficient U-net</strong><br>An upgraded model to the standard U-Net that swaps the traditional encoder for a pre-trained EfficientNet, using compound scaling to achieve higher accuracy with significantly less computational overhead.</li>
+                        <li><strong>Deeplab V3+</strong><br>A scale-aware architecture that uses dilated convolutions and a spatial pyramid pooling module (ASPP) to see objects at different sizes while maintaining a dense feature map.</li>
+                        <li><strong>SegFormer</strong><br>A modern Transformer-based model that eliminates the need for positional encodings and uses a simple MLP decoder, offering a highly efficient, scalable, and robust alternative to traditional CNN-based segmentation.</li>
+                        <li><strong>HRNet</strong><br>A unique model architecture that maintains high-resolution representations in parallel branches throughout the entire network, constantly fusing multi-scale information to preserve better spatial precision.</li>
+                        <li><strong>FC-DenseNet</strong><br>An architecture that is comprised of dense connections that maximizes feature reuse and gradient flow by connecting every layer within a block to every other layer, resulting in a very parameter-efficient model for precise segmentation.</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">experiment.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Experiment</h2>
+                <p>Let's try running a semantic segmentation task. We have a dataset of Satellite imagery from the city of Amsterdam. We split our data set into the training, validation, and test sets. The dataset contains a 512x512 image with 3 channels (RGB) in a TIFF file format for the image and also the year information attached to each pixel. We can run the experiment using google colab, that has cloud computing and GPU processing which is required extensively to train the models.</p>
+
+                <h3>> Relabeling</h3>
+                <p>We the first relabel the data for the age component. Currently it is in the form of year (1994 for example), so we relabel into 4 categories for convenience. For values of &lt;1981, we assign a value of 1, for values &gt;=1981 and &lt;2001, we assign a value of 2, then for values &gt;=2001, assign a value of 3. For the background we simply assign a value of 0. Since the values have become so small we can use the QGIS software to view the images.</p>
+
+                <div class="blog-grid">
+                    <figure class="blog-figure">
+                        <img class="figure-img" src="Semantic_Segmentation/projreport-pics/8-image.png" alt="Satellite Image Sample">
+                        <figcaption class="figure-caption">Satellite Image Sample</figcaption>
+                    </figure>
+                    <figure class="blog-figure">
+                        <img class="figure-img" src="Semantic_Segmentation/projreport-pics/8-imgneu.png" alt="Age of building Sample">
+                        <figcaption class="figure-caption">Age of building Sample</figcaption>
+                    </figure>
+                </div>
+                <p class="figure-caption">Dataset Sample</p>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/8-ageqgis.png" alt="Age Sample Opened in QGIS">
+                    <figcaption class="figure-caption">Age Sample Opened in QGIS</figcaption>
+                </figure>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/8-processedage.png" alt="Relabeled Age Sample Opened in QGIS">
+                    <figcaption class="figure-caption">Relabeled Age Sample Opened in QGIS</figcaption>
+                </figure>
+
+                <h3>> Importing and data loading</h3>
+                <p>To start our training, we first create the setup and import part of the code. We code to prepare the environment, import frameworks, and initialize global hyperparameters. We first import fundamental PyTorch libraries for neural network design, optimization, and structural plumbing, alongside data tools like numpy, pandas, and scikit-image for managing geographic arrays and reading raw multi-band images. Since we put our dataset on Google Drive, we all the time need to allow access to the dataset, by mounting to Google Drive and establish target paths for tracking training metrics and saving checkpoints. Finally, we instantiate core constants that set the behavior of the network, such as locking the hardware execution path to a CUDA-enabled GPU, designating a small batch size of 4 to manage memory limits, and defining the target segmentation architecture to output four specific channels corresponding to the age categories.</p>
+                <p>Then we have the dataloading part that translates these raw files into an optimized pipeline using PyTorch's structured ingestion components. It defines a custom AmsterdamDataset class that dynamically checks training, validation, and testing directories, employing file name set intersections to guarantee that every input image perfectly matches its corresponding ground-truth segmentation age mask. When an item is called, the dataset reads the .tiff files, applies an Albumentations transformation pipeline that normalizes the RGB values to ImageNet standards, and converts the data into PyTorch tensors via ToTensorV2(). These datasets are then wrapped inside standard PyTorch DataLoader instances, which automate structural batching, shuffle the training sequence to eliminate ordering bias, and consistently yield paired mini-batches directly to the model during training loops.</p>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/importcode.png" alt="Code Excerpt of Import Cell">
+                    <figcaption class="figure-caption">Code Excerpt of Import Cell</figcaption>
+                </figure>
+
+                <h3>> Model Architecture and Training</h3>
+                <p>To build our model, we construct the architecture cell by cloning the code from a public GitHub repository directly into our active Colab environment and append its directory to our system path so Python can successfully discover and import the custom function for each model architecture that we want to use. We then instantiate our segmentation model configuration, since some model have different versions or backbone used. Finally, we finish configuring this segment by defining the class_weights penalty tensor to handle any pixel imbalances across background elements and historical structures, loading it directly into a standard cross-entropy loss function alongside an AdamW weight decay optimizer to handle gradient steps.</p>
+                <p>For the training cell we run forty epochs of training and also have checkpoint management. The code automatically scan for an existing progress file to resume training smoothly, restoring model weights, optimizer states, and past performance trackers if a crash occurs or runtime error or gpu limit which occurs often when we use the free tier of colab. We also implemented the Automatic Mixed Precision (AMP) through a PyTorch GradScaler context to save video memory and accelerate math operations by downscaling precision dynamically inside the forward pass. Finally, we execute the standard mini-batch pipeline by running data forward through the architecture, evaluating errors against our weighted cross-entropy criterion, unscaling gradients to safely clip their maximum norms at 1.0 to prevent mathematical instability, and executing backpropagation via the optimizer before applying PyTorch garbage collection at each epoch's conclusion.</p>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/train.png" alt="Code Excerpt of Training Cell">
+                    <figcaption class="figure-caption">Code Excerpt of Training Cell</figcaption>
+                </figure>
+
+                <h3>> Testing and Visualization</h3>
+                <p>After training the model, we then evaluate our final performance. Using the test set, we log the final accuracy metrics. We first load the best saved checkpoint weights from our training phase, put the model into evaluation mode, and initialize a global confusion matrix as a numpy array. Since we only want to test final generalization, we run a loop exclusively over the test loader under a gradient-free context, taking the argmax of the model's outputs to extract the predicted class for each pixel and accumulating them into our matrix. Finally, we calculate the final class IoUs, mean Intersection-over-Union (mIoU), and overall accuracy from this matrix, package these scores into a pandas DataFrame, and append or save the results into a CSV file on our drive.</p>
+                <p>Lastly, for visualization of our model's performance, we create a multi-panel analysis of a sample. We first load our best checkpoint weights, set the model to evaluation mode, and run a strict scanning loop over the validation loader to isolate a specific image patch that contains a specific threshold of all three age building categories. Once a qualifying patch is found, we pass it through a gradient-free forward pass, applying a bilinear interpolation step to automatically correct any resolution mismatches caused by different model architectures before extracting both the argmax predictions and soft probability scores. Finally, we use matplotlib to output a four-panel figure displaying the original satellite image, the ground truth mask with a custom color legend, the categorical model prediction map, and a continuous confidence heatmap.</p>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/eval.png" alt="Code Excerpt of Evaluating Cell">
+                    <figcaption class="figure-caption">Code Excerpt of Evaluating Cell</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">results.csv</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Results</h2>
+                <p>Here is a summary table of the results:</p>
+                <table class="blog-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>mIoU</th>
+                            <th>Overall Acc.</th>
+                            <th>IoU (Background)</th>
+                            <th>IoU (&lt;1981)</th>
+                            <th>IoU (1981--2001)</th>
+                            <th>IoU (&gt;=2001)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Milesial_UNet</td>
+                            <td>34.98</td>
+                            <td>76.59</td>
+                            <td>81.87</td>
+                            <td>27.80</td>
+                            <td>15.29</td>
+                            <td>14.97</td>
+                        </tr>
+                        <tr>
+                            <td>Efficient_UNet_B0</td>
+                            <td>35.48</td>
+                            <td>76.58</td>
+                            <td>81.25</td>
+                            <td>25.39</td>
+                            <td>14.52</td>
+                            <td>20.74</td>
+                        </tr>
+                        <tr>
+                            <td>FC_DenseNet67</td>
+                            <td>32.32</td>
+                            <td>80.31</td>
+                            <td>84.86</td>
+                            <td>8.64</td>
+                            <td>17.54</td>
+                            <td>18.24</td>
+                        </tr>
+                        <tr>
+                            <td>DeepLab_v3_Plus_ResNet</td>
+                            <td>35.29</td>
+                            <td>74.94</td>
+                            <td>79.08</td>
+                            <td>27.28</td>
+                            <td>14.67</td>
+                            <td>20.11</td>
+                        </tr>
+                        <tr>
+                            <td>SegFormer_B0</td>
+                            <td>30.29</td>
+                            <td>68.54</td>
+                            <td>72.13</td>
+                            <td>19.03</td>
+                            <td>13.27</td>
+                            <td>16.73</td>
+                        </tr>
+                        <tr>
+                            <td>HRNet_W48</td>
+                            <td>34.50</td>
+                            <td>75.84</td>
+                            <td>81.23</td>
+                            <td>23.06</td>
+                            <td>15.49</td>
+                            <td>18.20</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/comparison.png" alt="Bar Chart Comparison of Performance">
+                    <figcaption class="figure-caption">Bar Chart Comparison of Performance</figcaption>
+                </figure>
+
+                <h3>> U-net</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/unet3.png" alt="Result of U-Net">
+                    <figcaption class="figure-caption">Result of U-Net</figcaption>
+                </figure>
+
+                <h3>> Efficient U-net</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/efficient_unet.png" alt="Result of Efficient U-Net">
+                    <figcaption class="figure-caption">Result of Efficient U-Net</figcaption>
+                </figure>
+
+                <h3>> FC-Densenet</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/fcdensenet2.png" alt="Result of FC-Densenet">
+                    <figcaption class="figure-caption">Result of FC-Densenet</figcaption>
+                </figure>
+
+                <h3>> DeepLabV3</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/deeplab.png" alt="Result of DeepLabV3">
+                    <figcaption class="figure-caption">Result of DeepLabV3</figcaption>
+                </figure>
+
+                <h3>> SegFormer</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/segformer.png" alt="Result of SegFormer">
+                    <figcaption class="figure-caption">Result of SegFormer</figcaption>
+                </figure>
+
+                <h3>> HRNet</h3>
+                <figure class="blog-figure">
+                    <img class="figure-img" src="Semantic_Segmentation/projreport-pics/hrnet.png" alt="Result of HRNet">
+                    <figcaption class="figure-caption">Result of HRNet</figcaption>
+                </figure>
+                <p>From the results we can see that sometimes there’s a trade-off between overall accuracy and minority-class recognition, which is a common challenge in semantic segmentation. While FC_DenseNet67 achieved the highest overall accuracy at 80.31, a closer look at its class-specific breakdown reveals that this performance is heavily inflated by its strong classification of the background category (84.86 IoU), while severely failing on the scarcer &lt;=1981 building category with a critical IoU drop down to just 8.64. This discrepancy shows why we use mean Intersection-over-Union (mIoU)  as a far more reliable benchmark than raw accuracy for imbalanced datasets. In contrast, models like Efficient_UNet_B0 and DeepLab_v3_Plus_ResNet delivered the most robust and balanced performance across the entire dataset, having the highest mIoU values at 35.48 and 35.29, respectively. Showing great IoUs for the 3 building age categories.</p>
+                <p>Additionally, we can see that traditional convolutional neural network (CNN) architectures incorporating multi-scale feature aggregation or advanced backbones outperformed modern lightweight vision transformers in this specific context. SegFormer_B0 underperformed across all benchmarks, yielding the lowest mIoU (30.29) and overall accuracy (68.54), which suggests that transformer-based models may require substantially larger datasets or specialized hyperparameter tuning to accurately map detailed spatial representations compared to CNN models.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>exit. System uptime 1032 days. Built with plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+</file>
+
+<file path="style.css">
+/* Everforest Dark Theme Color Palette */
+:root {
+    --bg-main: #2d353b;        
+    --bg-window: #3d484d;      
+    --bg-window-content: #323c41; 
+    --bg-nav-footer: rgba(52, 63, 68, 0.9); 
+    
+    --fg-bright: #d3c6aa;     
+    --fg-main: #a7b8a7;       
+    --fg-faint: #859289;      
+    
+    --color-yellow: #dbbc7f;  
+    --color-green: #a7c080;   
+    --color-blue: #7fbbb3;    
+    --color-purple: #d699b6;  
+    --color-aqua: #83c092;    
+    --color-red: #e67e80;     
+    --color-orange: #e69875;
+    
+    --border-main: #404a50;   
+    --border-focus: var(--color-blue); 
+    --border-radius: 4px;     
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'JetBrains Mono', monospace;
+    background-color: var(--bg-main);
+    
+    /* Wallpaper Setting */
+    background-image: url('./home/fog_forest_1.webp'); 
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    
+    color: var(--fg-main);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* Typography */
+h1, h2, h3 { color: var(--fg-bright); font-weight: 600; margin-bottom: 0.5rem;}
+a { color: var(--color-blue); text-decoration: none; transition: 0.3s; }
+a:hover { color: var(--color-purple); }
+.section-title { margin-bottom: 2rem; border-bottom: 1px solid var(--border-main); padding-bottom: 0.5rem; color: var(--fg-faint); font-weight: 200; }
+
+/* Navigation */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 5%;
+    background: var(--bg-nav-footer);
+    backdrop-filter: blur(5px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--border-main);
+}
+.nav-brand { font-size: 1.2rem; font-weight: bold; color: var(--color-green); }
+.nav-brand span { color: var(--color-yellow); }
+.nav-links { list-style: none; display: flex; gap: 2rem; }
+.nav-links a { color: var(--fg-bright); }
+.nav-links a:hover { color: var(--color-aqua); }
+
+/* Main Container */
+main {
+    max-width: 1000px;
+    margin: 2.5rem auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column; 
+    gap: 1.5rem; 
+}
+
+/* NEW: Split Layout for Side-by-Side Windows */
+.split-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+/* Hyprland / Window Pane Aesthetic */
+.window-pane {
+    background: var(--bg-window);
+    border: 1px solid var(--border-main);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    width: 100%; 
+}
+
+/* Focus effects */
+.window-pane:hover {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 10px rgba(127, 187, 179, 0.2);
+    transform: translateY(-1px);
+}
+
+.window-header {
+    background: var(--bg-window); 
+    padding: 0.4rem 1rem;
+    border-bottom: 1px solid var(--border-main);
+    display: flex;
+    align-items: center;
+}
+
+.window-title {
+    font-size: 0.8rem;
+    color: var(--fg-bright);
+    font-weight: 200;
+    font-family: inherit;
+}
+
+.window-content { padding: 2rem; background: var(--bg-window-content); height: 100%; }
+
+/* Hero Section Layout for Portrait */
+.terminal-pane .window-content { padding: 3rem; background: var(--bg-window); }
+
+.hero-content-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.hero-text-block {
+    flex: 1; 
+    max-width: 65%;
+}
+
+.hero-portrait-block {
+    max-width: 30%;
+    flex-shrink: 0; 
+}
+
+/* Portrait Image Styling */
+.portrait-img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1; 
+    object-fit: cover;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--border-main); 
+    transition: 0.3s ease;
+}
+.hero-portrait-block:hover .portrait-img {
+    border-color: var(--color-blue);
+    box-shadow: 0 0 10px rgba(127, 187, 179, 0.3);
+}
+
+/* Hero Typography */
+.prompt { margin-bottom: 1rem; color: var(--fg-faint); }
+.prompt .user { color: var(--color-green); font-weight: bold; }
+.prompt .dir { color: var(--color-yellow); font-weight: bold; }
+#typewriter {
+    font-size: 2.2rem; 
+    margin: 1rem 0;
+    color: var(--fg-bright);
+    min-height: 3rem; 
+}
+.subtitle { font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--fg-faint); }
+
+/* Social Links */
+.social-links-container {
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-main);
+    padding-top: 1rem;
+    color: var(--fg-faint);
+}
+.link-label { margin-bottom: 0.8rem; font-size: 0.9rem;}
+
+.social-links-wrapper {
+    display: flex;
+    gap: 2.5rem; 
+    align-items: center;
+}
+
+.social-links-wrapper a i {
+    font-size: 1.6rem;
+    color: var(--fg-bright); 
+    transition: 0.3s;
+}
+
+.social-links-wrapper a:hover i {
+    color: var(--color-blue);
+    transform: scale(1.1);
+}
+
+/* Timeline */
+.cv-pane h2 { margin-bottom: 2rem; }
+.timeline-item { margin-bottom: 1.8rem; }
+.timeline-item h3 { font-size: 1.1rem; font-weight: 600;}
+.timeline-item h3 span { color: var(--color-blue); font-weight: normal; }
+.timeline-item .date { display: block; font-size: 0.85rem; color: var(--color-yellow); margin-bottom: 0.5rem; }
+.timeline-item p { margin-top: 0.3rem; }
+
+/* Skills */
+.skills-container { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 1rem; }
+.skill-tag {
+    background: rgba(131, 192, 146, 0.1); 
+    border: 1px solid var(--border-main);
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: var(--color-aqua);
+}
+
+/* Interests List Styling */
+.interests-list {
+    margin-left: 1.5rem;
+    list-style-type: none; 
+}
+.interests-list li {
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+.interests-list li::before {
+    content: ">"; 
+    color: var(--color-green);
+    position: absolute;
+    left: -1.5rem;
+    font-weight: bold;
+}
+
+/* Projects */
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.project-card {
+    background: var(--bg-window-content);
+    border: 1px solid var(--border-main);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.project-card:hover { border-color: var(--border-focus); }
+.project-card h3 { color: var(--fg-bright); font-size: 1.1rem;}
+.project-card p { font-size: 0.9rem; }
+.project-tech { margin: 1rem 0; display: flex; flex-wrap: wrap; gap: 0.8rem; font-size: 0.8rem; color: var(--color-aqua); }
+.project-link { margin-top: auto; display: inline-block; padding-top: 1rem;}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    #typewriter { font-size: 1.8rem; min-height: 2.2rem; }
+    .nav-links { display: none; }
+    .window-content { padding: 1.5rem; }
+    .terminal-pane .window-content { padding: 2rem; }
+    .social-links-wrapper { gap: 1.5rem; }
+
+    /* Break the split layout on mobile */
+    .split-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-content-wrapper {
+        flex-direction: column-reverse; 
+        gap: 1.5rem;
+        align-items: center;
+        text-align: center;
+    }
+    .hero-text-block { max-width: 100%; }
+    .hero-portrait-block { max-width: 50%; margin-top: 1rem; }
+    .social-links-wrapper { justify-content: center; } 
+    .interests-list { margin-left: 0; text-align: left;}
+    .interests-list li { padding-left: 1.5rem;}
+    .interests-list li::before { left: 0; }
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--fg-faint);
+    background: var(--bg-nav-footer);
+    backdrop-filter: blur(5px);
+    border-top: 1px solid var(--border-main);
+    margin-top: 2.5rem;
+    font-size: 0.8rem;
+}
+
+/* =========================================
+   PROJECT DETAIL PAGE STYLES
+   ========================================= */
+
+/* Project Header Buttons */
+.project-header-content h1 { font-size: 2.5rem; color: var(--color-green); }
+.project-links { display: flex; gap: 1rem; margin-top: 1.5rem; }
+.btn-primary, .btn-secondary {
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+}
+.btn-primary {
+    background-color: rgba(127, 187, 179, 0.2); /* Faded Blue */
+    color: var(--color-blue);
+    border-color: var(--color-blue);
+}
+.btn-primary:hover { background-color: var(--color-blue); color: var(--bg-main); }
+.btn-secondary {
+    background-color: transparent;
+    color: var(--fg-bright);
+    border-color: var(--border-main);
+}
+.btn-secondary:hover { border-color: var(--color-yellow); color: var(--color-yellow); }
+
+/* Meta List (Project Stats) */
+.meta-list li { margin-bottom: 0.8rem; }
+.meta-list li strong { color: var(--color-purple); }
+
+/* --- CAROUSEL STYLES --- */
+.carousel-wrapper { padding: 1.5rem; display: flex; flex-direction: column; align-items: center; }
+.carousel {
+    position: relative;
+    height: 450px; /* Adjust height based on your screenshot aspect ratio */
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    border: 1px solid var(--border-main);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: var(--bg-main);
+}
+
+.carousel-track-container {
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.carousel-track {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    position: relative;
+    height: 100%;
+    transition: transform 250ms ease-in;
+}
+
+.carousel-slide {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+}
+
+.carousel-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensures images fill the box without stretching */
+}
+
+/* Carousel Controls */
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(45, 53, 59, 0.8);
+    border: 1px solid var(--border-main);
+    color: var(--fg-bright);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    z-index: 10;
+    transition: 0.2s;
+}
+.carousel-btn:hover { border-color: var(--color-blue); color: var(--color-blue); }
+.prev-btn { left: 15px; }
+.next-btn { right: 15px; }
+
+/* Carousel Dots */
+.carousel-nav {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 15px 0 0 0;
+}
+.carousel-indicator {
+    border: 0;
+    border-radius: 50%;
+    width: 12px;
+    height: 12px;
+    background: var(--border-main);
+    cursor: pointer;
+    transition: 0.3s;
+}
+.carousel-indicator.current-indicator { background: var(--color-aqua); box-shadow: 0 0 8px rgba(131, 192, 146, 0.6);}
+
+/* Mobile Adjustments for Carousel */
+@media (max-width: 768px) {
+    .carousel { height: 250px; }
+    .project-links { flex-direction: column; }
+    .project-header-content h1 { font-size: 1.8rem; }
+}
+
+/* =========================================
+   BLOG / REPORT PAGE STYLES
+   ========================================= */
+
+.blog-section { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.blog-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0;
+}
+
+.figure-img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-main);
+    background: var(--bg-main);
+}
+
+.figure-caption {
+    font-size: 0.85rem;
+    color: var(--fg-faint);
+}
+
+.blog-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.2rem;
+}
+
+.blog-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.blog-table th,
+.blog-table td {
+    border: 1px solid var(--border-main);
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+}
+
+.blog-table th { color: var(--fg-bright); background: rgba(63, 72, 77, 0.6); }
+
+.model-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.2rem;
+}
+
+@media (max-width: 768px) {
+    .blog-grid { grid-template-columns: 1fr; }
+}
+
+/* =========================================
+   THUMBNAILS & BUTTONS (NEW)
+   ========================================= */
+
+/* Project Thumbnail */
+.project-thumbnail {
+    width: 100%;
+    height: 160px;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-main);
+    background-color: var(--bg-main); /* Fallback */
+}
+
+.project-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+/* Hover effect on thumbnail */
+.project-card:hover .project-thumbnail img {
+    transform: scale(1.05);
+}
+
+/* Adjust project card padding slightly for thumbnail */
+.project-card .window-content {
+    padding: 1.5rem;
+    height: calc(100% - 160px); /* Subtract thumbnail height to balance flexbox */
+}
+
+/* "Check out more" Button Container */
+.check-more-container {
+    text-align: center;
+    margin-top: 2.5rem;
+    width: 100%;
+}
+
+.btn-check-more {
+    display: inline-block;
+    padding: 0.8rem 1.5rem;
+    background-color: var(--bg-window);
+    color: var(--fg-bright);
+    border: 1px solid var(--border-main);
+    border-radius: var(--border-radius);
+    font-size: 0.95rem;
+    transition: all 0.3s;
+}
+
+.btn-check-more:hover {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+    box-shadow: 0 0 10px rgba(127, 187, 179, 0.15);
+    transform: translateY(-2px);
+}
+</file>
+
+<file path="verilens.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~/projects/verilens | dev.tty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-main);
+            margin-bottom: 1.5rem;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><span>~</span>/portfolio/projects</div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-arrow-left"></i> cd .. (back to home)</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="window-pane">
+            <div class="window-header">
+                <div class="window-title">cat verilens.md</div>
+            </div>
+            <div class="window-content project-header-content">
+                <h1>VeriLens: A Multi-Modal AI Framework for Image Provenance and Contextual Verification</h1>
+                
+                <figure class="blog-figure" style="margin-top: 1.5rem; margin-bottom: 1rem;">
+                    <img class="figure-img" src="verilens/addcontext.png" alt="VeriLens Interface Banner">
+                </figure>
+
+                <div class="project-links">
+                    <a href="https://github.com/hachln/VerilensAI" target="_blank" class="btn-primary"><i class="fab fa-github"></i> Source Code</a>
+                    <a href="verilens/Verilens_Paper.pdf" target="_blank" class="btn-secondary"><i class="fa-solid fa-file-pdf"></i> Read Paper</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">background.txt</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Background: The Problem with Visual Misinformation</h2>
+                <p>The rapid digitization of information has fundamentally transformed how we consume and share news. While this has democratized information, it has also created a massive challenge: false news spreads significantly faster and farther than truthful news online. Where humans are primarily responsible for its circulation.</p>
+                <p>This problem has only intensified with the rise of accessible generative AI tools. Recent studies show that AI-generated fake news is shared at similar rates to human-made fake news, proving that automated content is just as persuasive.</p>
+                <p>Vulnerability spans across all demographics. Older adults, often with lower digital literacy, are disproportionately exposed to and likely to share fake news. At the same time, despite having higher awareness, younger generations and digital natives still struggle to accurately differentiate deceptive content from legitimate information.</p>
+                <p>One particularly powerful form of misinformation is the "recontextualization" of images. These aren't necessarily deepfakes or fabricated images, they are often completely authentic images that have been removed from their original context and paired with misleading captions to drive a false narrative.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">overview.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> The Solution: What is VeriLens?</h2>
+                <p>To address this, we developed <strong>VeriLens</strong>, an AI-powered browser extension designed to help users verify images and evaluate whether their associated claims are contextually accurate in real-time.</p>
+                <p>We wanted to build a tool that requires minimal technical knowledge, embedding digital literacy directly into everyday browsing behavior. By integrating reverse image search capabilities with multimodal artificial intelligence, VeriLens acts as an on-the-fly fact-checker.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">workflow.txt</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> How It Works: Technical Workflow</h2>
+                <p>Let's dive into how the system actually processes an image when a user encounters a dubious claim online. The workflow is broken down into four main steps:</p>
+
+                <h3>1. Activation</h3>
+                <p>When browsing the web, a user can simply right-click on any image and select the "Verify with VeriLens" option from the context menu. The extension will then prompt the user to input the caption or claim attached to that image.</p>
+                
+                <figure class="blog-figure" style="max-width: 500px; margin: 1rem 0;">
+                    <img class="figure-img" src="verilens/rightclick.png" alt="VeriLens Context Menu Activation">
+                    <figcaption class="figure-caption">Activating verification via right-click</figcaption>
+                </figure>
+
+                <h3>2. Provenance</h3>
+                <p>Once the claim is submitted, the extension performs a reverse image search using Google Lens (via SearchAPI). This step retrieves prior occurrences of the image online, establishes its earliest known publication date, and pulls relevant source links. By establishing the historical timeline, we build a factual foundation.</p>
+
+                <h3>3. AI Analysis</h3>
+                <p>Next, the retrieved historical context, the original image, and the user-provided claim are sent to a multimodal AI model (we used Gemini 2.5 Flash for our prototype). The AI evaluates the semantic consistency between all three elements, checking for temporal or geographic inconsistencies and assessing if the visual evidence actually supports the stated claim.</p>
+
+                <h3>4. Output</h3>
+                <p>Finally, the system generates a natural language explanation. It provides the user with the true context of the image, an evaluation of the specific claim, and a final credibility verdict (e.g., confirming if a claim is completely false).</p>
+                
+                <figure class="blog-figure" style="max-width: 500px; margin: 1rem 0;">
+                    <img class="figure-img" src="verilens/output.png" alt="VeriLens AI Verification Output Panel">
+                    <figcaption class="figure-caption">Final credibility evaluation output</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">architecture_ethics.md</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Architecture & Ethical Safeguards</h2>
+                <p>The technical architecture consists of a JavaScript frontend for the browser extension, which communicates securely via HTTPS to a backend server. The backend acts as an API gateway managing requests between SearchAPI and Gemini.</p>
+                <p>When dealing with user browsing data, privacy is a major concern. To protect users, we designed the system for transient data processing. Images and claims are processed on the fly and are not permanently stored, minimizing privacy risks. Additionally, we implemented a caching mechanism that stores frequently searched metadata to reduce redundant API calls and keep operational costs down.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">feasibility.csv</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Experiment & Feasibility</h2>
+                <p>To ensure the project was practical, we ran a cost-feasibility analysis on our prototype.</p>
+                <p>Assuming an estimation of two searches per day over a month for an individual user, the operational expenses remain highly efficient. Utilizing Google Lens for the reverse search and Gemini 2.5 Flash for the multimodal analysis, our estimated monthly operational cost for 10,000 searches sits at $51.25. This translates to roughly <strong>$0.51 per user per month</strong>. Because the architecture is modular, it's highly scalable and allows for seamless integration with alternative APIs if pricing structures change.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">conclusion.txt</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Conclusion</h2>
+                <p>By empowering individuals at the exact point of content consumption, VeriLens can meaningfully interrupt the misinformation cycle. Rather than expecting users to independently cross-reference fact-checking websites, VeriLens brings the truth directly to the visual web, helping users transition from simple awareness to active discernment.</p>
+            </div>
+        </section>
+
+        <section class="window-pane blog-section">
+            <div class="window-header">
+                <div class="window-title">presentation.mp4</div>
+            </div>
+            <div class="window-content blog-section">
+                <h2>> Video Presentation and Demo</h2>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/-kOrtw3-eHk" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>exit. Built with plain HTML/CSS/JS.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+</file>
+
+</files>

@@ -32,15 +32,41 @@ function erase() {
 
 document.addEventListener("DOMContentLoaded", function() {
     // Start typing effect with a small initial delay
-    if(textArray.length) setTimeout(type, 1000);
+    if (typewriterElement && textArray.length) setTimeout(type, 1000);
 
-    // Smooth Scrolling for navigation links
-    document.querySelectorAll('.navbar a[href^="#"]').forEach(anchor => {
+    // Mobile Navigation Toggle
+    const navToggle = document.querySelector('.nav-toggle');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (navToggle && navLinks) {
+        navToggle.addEventListener('click', () => {
+            const isOpen = navLinks.classList.toggle('active');
+            navToggle.textContent = isOpen ? '[close]' : '[menu]';
+            navToggle.setAttribute('aria-expanded', isOpen);
+        });
+    }
+
+    // Smooth Scrolling & Auto-Close Mobile Menu on Link Click
+    document.querySelectorAll('.navbar a').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            document.querySelector(this.getAttribute('href')).scrollIntoView({
-                behavior: 'smooth'
-            });
+            // Close mobile dropdown whenever any nav link is clicked
+            if (navLinks && navLinks.classList.contains('active')) {
+                navLinks.classList.remove('active');
+                if (navToggle) {
+                    navToggle.textContent = '[menu]';
+                    navToggle.setAttribute('aria-expanded', 'false');
+                }
+            }
+
+            // Smooth-scroll for on-page anchors (#section)
+            const href = this.getAttribute('href');
+            if (href && href.startsWith('#')) {
+                const target = document.querySelector(href);
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
         });
     });
 });
