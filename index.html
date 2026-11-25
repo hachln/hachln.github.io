@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
+    <canvas id="bg-shader" aria-hidden="true"></canvas>
     <nav class="navbar">
         <div class="nav-brand"><span>~</span>/portfolio</div>
         <button class="nav-toggle" aria-label="Toggle Menu">[menu]</button>
@@ -80,6 +80,10 @@
                         <span class="skill-tag">CSS</span>
                         <span class="skill-tag">JavaScript</span>
                         <span class="skill-tag">Linux</span>
+                    </div>
+                    <div class="demo-scope-wrapper">
+                        <span class="demo-label"></span>
+                        <canvas id="demo-scope"></canvas>
                     </div>
                 </div>
             </section>
@@ -171,6 +175,8 @@
         <p>EOF. Built with <i class="fas fa-heart" style="color: var(--fg-bright);"></i> and plain HTML/CSS/JS.</p>
     </footer>
 
+    <script src="demo-scope.js"></script>
+    <script src="shader.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
